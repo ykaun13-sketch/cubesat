@@ -153,6 +153,8 @@ select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid 
       </div>
       <button class="ghost" id="reset" type="button">Очистить</button>
       <button class="ghost" id="qrbtn" type="button" hidden>QR для класса</button>
+      <a class="ghost" href="sborka.html" style="text-decoration:none;display:inline-flex;align-items:center;color:var(--frame)">Сборочный цех →</a>
+      <a class="ghost" href="nagruzki.html" style="text-decoration:none;display:inline-flex;align-items:center;color:var(--frame)">Лаборатория нагрузок →</a>
     </div>
   </header>
   <div class="mission" id="missionText"></div>
@@ -228,8 +230,8 @@ const P = [
   {id:"sband", g:"com", name:"Передатчик S-диапазона 2,4 ГГц", short:"S-диап.", h:15, m:90, p:1.5, band:"s", rate:1e6, ds:"Быстрый канал для снимков и видео: 1 Мбит/с."},
   {id:"mag", g:"adcs", name:"Магнитная ориентация", short:"Магн.", h:15, m:80, p:0.4, adcs:1, ds:"Магнитометр и катушки. Гасят вращение, точность около ±10°."},
   {id:"rw", g:"adcs", name:"Маховики", short:"Маховики", h:30, m:250, p:1.2, adcs:2, ds:"Точно наводят спутник, около ±1°. Нужны для съёмки."},
-  {id:"pad", g:"pl", name:"ПН PAD, видеомодуль", short:"PAD", h:40, m:180, p:3.0, cam:true, video:true, ex:true, ds:"Снимает и обрабатывает видео. Объектив должен смотреть на Землю."},
-  {id:"sprite", g:"pl", name:"ПН SPRITE", short:"SPRITE", h:35, m:150, p:1.0, ex:true, ds:"Вторая полезная нагрузка проекта МКА."},
+  {id:"pad", g:"pl", name:"ПН PAD, пылевой эксперимент", short:"PAD", h:40, m:180, p:3.0, video:true, ex:true, ds:"Снимает на видео, как слипаются пылинки в невесомости. Камера с ИК-подсветкой смотрит внутрь модуля."},
+  {id:"sprite", g:"pl", name:"ПН SPRITE", short:"SPRITE", h:35, m:150, p:1.0, ex:true, ds:"Изучает покрытия: 6 образцов, 18 фотодиодов, датчики температуры. Данные — числа, их немного."},
   {id:"cam", g:"pl", name:"Камера ДЗЗ", short:"Камера", h:35, m:140, p:1.5, cam:true, ds:"Фотографирует поверхность Земли."},
   {id:"ant_uhf", g:"out", ext:true, name:"Антенна УКВ", m:30, band:"uhf", ds:"Рулеточные штыри, раскрываются после отделения."},
   {id:"ant_s", g:"out", ext:true, name:"Патч-антенна S", m:25, band:"s", ds:"Плоская антенна на торце для S-передатчика."},
@@ -242,8 +244,8 @@ const MISSIONS = {
   free:{t:"Свободная сборка", u:3, text:"Соберите любой спутник, который пройдёт проверку инженеров.", goals:()=>[]},
   first:{t:"«Первый голос»", u:1, text:"Самый маленький спутник 1U должен выйти на связь и передавать телеметрию на Землю.",
     goals:s=>[{t:"Формат 1U", ok:s.u===1},{t:"Телеметрия идёт по УКВ", ok:s.has("uhf")&&s.hasExt("ant_uhf")}]},
-  video:{t:"«Видео с орбиты»", u:3, text:"Спутник снимает видео модулем PAD. Одна минута видео (≈ 25 МБ) должна дойти до Земли за сутки.",
-    goals:s=>[{t:"На борту PAD", ok:s.has("pad")},{t:"Точная ориентация для съёмки", ok:s.adcs>=2},{t:"Минута видео доходит за сутки", ok:s.videoDays!==null&&s.videoDays<=1}]},
+  video:{t:"«Видео с орбиты»", u:3, text:"Модуль PAD снимает, как слипаются пылинки в невесомости. Одна минута видео (≈ 25 МБ) должна дойти до Земли за сутки.",
+    goals:s=>[{t:"На борту PAD", ok:s.has("pad")},{t:"Вращение погашено системой ориентации", ok:s.adcs>=1},{t:"Минута видео доходит за сутки", ok:s.videoDays!==null&&s.videoDays<=1}]},
   double:{t:"«Двойная миссия»", u:3, text:"В одном корпусе летят обе нагрузки проекта: PAD и SPRITE. Хватит ли места и энергии?",
     goals:s=>[{t:"На борту PAD", ok:s.has("pad")},{t:"На борту SPRITE", ok:s.has("sprite")},{t:"Минута видео доходит за сутки", ok:s.videoDays!==null&&s.videoDays<=1}]}
 };
@@ -322,9 +324,9 @@ function checks(s){
     const p = byId[id];
     if(!p.cam) return;
     if(i!==st.stack.length-1) add("err",`${p.short}: объектив закрыт`,"Камера должна стоять в самом низу стопки, у торца, который смотрит на Землю.","тема 5");
-    if(id==="pad" && s.adcs<2) add("err","PAD: видео будет смазано","Для видео нужна точная ориентация. Поставьте маховики.","тема 8");
     if(id==="cam" && s.adcs<2) add("warn","Камера: снимки будут нечёткими","С магнитной ориентацией спутник наводится с точностью ±10°. Для резких кадров нужны маховики.","тема 7");
   });
+  if(s.has("pad") && s.adcs<1) add("err","PAD: пылинки прижмёт к стенкам","Спутник без ориентации вращается. Центробежная сила прижимает частицы к стенкам камеры, и эксперимент не получится. Поставьте систему ориентации.","тема 5");
   const cams = st.stack.filter(id=>byId[id].cam);
   if(cams.length>1) add("warn","Две камеры в одной стопке","Смотреть на Землю может только нижний модуль.","тема 5");
   // данные
