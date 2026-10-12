@@ -1,0 +1,825 @@
+<title>Лаборатория инженера МКА</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Russo+One&display=swap">
+<style>
+/* Та же система, что у «Лаборатории нагрузок»: вкладки-станции, панель станции, песочница + задания со звёздами */
+:root{
+  --bg:#EDF1F6; --surface:#FFFFFF; --surface2:#F5F7FA; --ink:#14213D; --muted:#586983; --line:#CBD4E1;
+  --frame:#1D4E89; --frameSoft:#DCE6F3; --accent:#C58A12; --accentInk:#865A00; --accentSoft:#F6E7C4;
+  --ok:#2B8A3E; --okBg:#E6F4EA; --err:#C92A2A; --errBg:#FCE8E8;
+  --veg:#2F8A4C; --soil:#9A6B3C; --water:#2A6FB0; --pb:#7A4FB5;
+  --display:"Russo One","Arial Black",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0B1626; --surface:#122238; --surface2:#0F1D30; --ink:#E6EDF7; --muted:#95A6C0; --line:#28405F;
+    --frame:#7FB2F0; --frameSoft:#16304F; --accent:#E2B04A; --accentInk:#E9BE63; --accentSoft:#3A2E14;
+    --ok:#69DB7C; --okBg:#133322; --err:#FF8787; --errBg:#3D1718;
+    --veg:#6FCF8E; --soil:#D7A673; --water:#7DB7F0; --pb:#B996F0;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0B1626; --surface:#122238; --surface2:#0F1D30; --ink:#E6EDF7; --muted:#95A6C0; --line:#28405F;
+  --frame:#7FB2F0; --frameSoft:#16304F; --accent:#E2B04A; --accentInk:#E9BE63; --accentSoft:#3A2E14;
+  --ok:#69DB7C; --okBg:#133322; --err:#FF8787; --errBg:#3D1718;
+  --veg:#6FCF8E; --soil:#D7A673; --water:#7DB7F0; --pb:#B996F0;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;padding-inline:16px;padding-block:0 32px;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;padding-block:20px 16px;border-bottom:1px solid var(--line)}
+.brand small{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.brand h1{font-family:var(--display);font-weight:400;font-size:clamp(26px,4vw,38px);line-height:1.05;margin:4px 0 0}
+.brand h1 span{color:var(--accentInk)}
+.links{display:flex;flex-wrap:wrap;gap:10px}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;min-height:42px;font-weight:600;text-decoration:none;color:var(--frame);display:inline-flex;align-items:center;gap:8px}
+.score-top{font-family:var(--mono);font-weight:600;color:var(--accentInk);font-size:17px}
+
+.tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:18px}
+@media (max-width:980px){.tabs{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:520px){.tabs{grid-template-columns:repeat(2,1fr)}}
+.tab{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;text-align:left;display:flex;flex-direction:column;gap:2px;min-height:64px}
+.tab .k{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.tab .t{font-weight:600;line-height:1.2}
+.tab .s{font-size:12px;color:var(--muted)}
+.tab[aria-selected="true"]{border-color:var(--frame);box-shadow:inset 0 0 0 1px var(--frame);background:var(--frameSoft)}
+.tab.done .s{color:var(--ok);font-weight:600}
+
+.station{margin-top:18px;display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}
+.panel h2{font-family:var(--display);font-weight:400;font-size:21px;margin:0 0 4px;text-wrap:balance}
+.panel h3{font-family:var(--display);font-weight:400;font-size:18px;margin:0 0 4px;color:var(--frame)}
+.lead{color:var(--muted);margin:0 0 14px;max-width:72ch}
+.eyebrow{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 4px}
+.qhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.qn{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.question{font-size:clamp(17px,2.2vw,21px);font-weight:600;margin:8px 0 14px;text-wrap:balance;max-width:70ch}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.opt{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:12px;text-align:left;font-weight:600;min-height:52px}
+.opt small{display:block;font-weight:400;color:var(--muted);font-size:13px;margin-top:2px}
+.opt.num{font-family:var(--mono);font-size:17px;text-align:center}
+.opt:hover:not(:disabled){border-color:var(--frame)}
+.opt.right{background:var(--okBg);border-color:var(--ok)}
+.opt.wrong{background:var(--errBg);border-color:var(--err)}
+.opt:disabled{cursor:default}
+.fb{margin-top:14px;border-radius:10px;padding:12px 14px;max-width:80ch}
+.fb.ok{background:var(--okBg)} .fb.err{background:var(--errBg)} .fb.info{background:var(--frameSoft)}
+.fb b{display:block}
+.fb.ok b{color:var(--ok)} .fb.err b{color:var(--err)} .fb.info b{color:var(--frame)}
+.fb ul{margin:6px 0 0;padding-left:18px}
+.next{margin-top:12px;border:0;border-radius:10px;background:var(--accent);color:#1B1300;font-weight:600;padding:10px 18px;min-height:44px}
+.sec{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;min-height:42px;font-weight:600;color:var(--frame)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.result{text-align:center;padding:10px 0}
+.result .big{font-family:var(--display);font-size:40px;color:var(--accentInk)}
+.formula{font-family:var(--mono);font-weight:600;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:inline-block}
+.src{font-size:12px;color:var(--muted);margin-top:12px}
+
+/* песочница */
+.sand{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.sand{grid-template-columns:1fr}}
+.ctrl{display:flex;flex-direction:column;gap:12px}
+.ctrl label{display:flex;justify-content:space-between;gap:10px;font-weight:600;font-size:14px}
+.ctrl label output{font-family:var(--mono);color:var(--accentInk)}
+input[type=range]{width:100%;accent-color:var(--frame)}
+.meters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.meter{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.meter span{display:block;font-size:12px;color:var(--muted)}
+.meter b{font-family:var(--mono);font-size:22px;font-variant-numeric:tabular-nums}
+.meter.hi b{color:var(--accentInk)}
+.fig{background:var(--surface2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.fig svg{display:block;width:100%;height:auto}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:8px 12px;font-weight:600;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--frame);color:var(--surface)}
+.bar{height:10px;background:var(--surface2);border:1px solid var(--line);border-radius:6px;position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--frame);border-radius:6px}
+.bar.over i{background:var(--err)}
+
+/* NDVI */
+.scale{height:14px;border-radius:7px;background:linear-gradient(90deg,var(--water),#C9C2A8 50%,var(--veg));position:relative;margin:22px 0 6px}
+.scale .pin{position:absolute;top:-8px;width:3px;height:30px;background:var(--ink);border-radius:2px;transform:translateX(-1px)}
+.scale-lab{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.map{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;max-width:420px}
+.cell{aspect-ratio:1/1;border-radius:8px;border:2px solid transparent;font-family:var(--mono);font-weight:600;font-size:15px;display:grid;place-items:center;color:#10180F}
+.cell.sel{border-color:var(--ink);box-shadow:inset 0 0 0 3px var(--surface)}
+.cell.miss{border-color:var(--err);border-style:dashed}
+.cell.extra{border-color:var(--err)}
+
+/* таблица измерений */
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+
+/* компоновка */
+.mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.mod{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:10px 12px;text-align:left;display:flex;flex-direction:column;gap:2px}
+.mod b{line-height:1.25}
+.mod span{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.mod[aria-pressed="true"]{border-color:var(--frame);background:var(--frameSoft);box-shadow:inset 0 0 0 1px var(--frame)}
+.mod.req{border-style:dashed}
+.stack{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;border:2px solid var(--ink);border-radius:6px;padding:3px;min-height:64px;background:var(--surface2)}
+.blk{border-radius:3px;font-size:11px;font-weight:600;padding:3px 4px;line-height:1.15;overflow:hidden;color:#fff;display:flex;align-items:center}
+.ulab{display:grid;grid-template-columns:repeat(3,1fr);font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center;margin-top:4px}
+.mission{background:var(--accentSoft);border-radius:10px;padding:10px 14px;font-weight:600}
+.nodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:12px}
+.node{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:10px 12px;text-align:left;font-weight:600;display:flex;gap:10px;align-items:center}
+.node i{font-style:normal;font-family:var(--mono);width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--frame);color:var(--surface);flex:none}
+.node[aria-pressed="true"]{border-color:var(--err);background:var(--errBg)}
+.node[aria-pressed="true"] i{background:var(--err)}
+.node.good{border-color:var(--ok);background:var(--okBg)}
+svg .hot{cursor:pointer}
+
+.bad{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+@media (prefers-reduced-motion:reduce){.bad{animation:none}}
+.final{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <small>Школа МКА · Темы 7–12</small>
+      <h1>Лаборатория <span>инженера МКА</span></h1>
+    </div>
+    <div class="links">
+      <span class="ghost" style="color:var(--ink)">Звёзды: <span class="score-top" id="stars">0</span></span>
+      <a class="ghost" href="https://ykaun13-sketch.github.io/cubesat/">Сборщик CubeSat</a>
+      <a class="ghost" href="https://ykaun13-sketch.github.io/cubesat/sborka.html">Сборочный цех</a>
+    </div>
+  </header>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <main id="station" class="station"></main>
+</div>
+
+<script>
+(function(){
+const $ = id=>document.getElementById(id);
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+const shuffle = a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const rnd = (a,b)=>a+Math.random()*(b-a);
+const pick = a=>a[Math.floor(Math.random()*a.length)];
+const nf = (x,d)=>{ const s=(Math.round(x*Math.pow(10,d))/Math.pow(10,d)).toFixed(d); return s.replace("-","−").replace(".",","); };
+const sg = (x,d=2)=>(x>=0?"+":"−")+nf(Math.abs(x),d);
+const trim = s=>s.indexOf(",")>=0 ? s.replace(/0+$/,"").replace(/,$/,"") : s;
+const RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* Вопрос: правильный ответ + неправильные → перемешанные варианты */
+function Qz(q, right, wrongs, w, extra){
+  const seen=new Set([right]); const ws=[];
+  for(const x of wrongs){ if(!seen.has(x)){ seen.add(x); ws.push(x);} if(ws.length===3) break; }
+  const opts=shuffle([right,...ws]);
+  return Object.assign({q, opts:opts.map(t=>({t})), a:opts.indexOf(right), w}, extra||{});
+}
+function Qo(q, opts, a, w, extra){ // фиксированные варианты (объекты {t,s})
+  const order=shuffle(opts.map((o,i)=>i));
+  return Object.assign({q, opts:order.map(i=>opts[i]), a:order.indexOf(a), w}, extra||{});
+}
+
+/* ===================== СТАНЦИЯ 1: NDVI ===================== */
+const SURF = {
+  veg:{t:"растительность", red:[0.04,0.12], nir:[0.45,0.70], say:"Высокий NDVI: вероятно, много зелени."},
+  soil:{t:"почва", red:[0.24,0.34], nir:[0.29,0.42], say:"NDVI около нуля: преимущественно грунт."},
+  water:{t:"вода", red:[0.05,0.10], nir:[0.01,0.04], say:"Отрицательный NDVI: вероятно, вода."}
+};
+const ndvi = (r,n)=>(n-r)/(n+r);
+function genNdvi(){
+  const kinds=shuffle(["veg","soil","water","veg","soil"]);
+  return kinds.map(k=>{
+    const S=SURF[k]; const r=+rnd(S.red[0],S.red[1]).toFixed(2), n=+rnd(S.nir[0],S.nir[1]).toFixed(2);
+    const v=ndvi(r,n);
+    return Qz(`Пиксель: RED = ${nf(r,2)}, NIR = ${nf(n,2)}. Чему равен NDVI?`, sg(v),
+      [sg(-v), sg(n-r), sg((n-r)/n), sg(r/n), sg((n-r)/(n+r)+0.2)],
+      `NDVI = (${nf(n,2)} − ${nf(r,2)}) / (${nf(n,2)} + ${nf(r,2)}) = ${sg(v)}. ${S.say}`, {cls:"num"});
+  });
+}
+function genMap(){
+  let v;
+  do{ v=Array.from({length:16},()=>+rnd(-0.4,0.8).toFixed(2)); const c=v.filter(x=>x>0.3).length; if(c>=4&&c<=10) break; }while(true);
+  return {v, sel:new Set(), checked:false, ok:false};
+}
+function cellColor(x){ // от синей воды через почву к зелени
+  const stops=[[-0.5,[110,165,220]],[0.05,[205,190,160]],[0.3,[200,210,140]],[0.8,[60,160,85]]];
+  for(let i=0;i<stops.length-1;i++){ const [a,ca]=stops[i],[b,cb]=stops[i+1]; if(x<=b){ const t=Math.max(0,Math.min(1,(x-a)/(b-a))); return `rgb(${ca.map((c,j)=>Math.round(c+(cb[j]-c)*t)).join(",")})`; } }
+  return "rgb(60,160,85)";
+}
+
+/* ===================== СТАНЦИЯ 2: PAD ===================== */
+const W2=240,H2=160;
+function genTrack(){
+  for(let tries=0;tries<200;tries++){
+    const radii=shuffle([3,5,7,9]);
+    const P=radii.map(r=>({r}));
+    const t=0; const T=P[t];
+    T.x=rnd(60,180); T.y=rnd(40,120);
+    const ang=rnd(0,Math.PI*2), sp=rnd(10,14); T.vx=Math.cos(ang)*sp; T.vy=Math.sin(ang)*sp;
+    // ловушка: другая частица во 2-м кадре оказывается ближе к старому месту цели
+    const D=P[1]; const a2=rnd(0,Math.PI*2), d2=rnd(5,9);
+    const tx=T.x+Math.cos(a2)*d2, ty=T.y+Math.sin(a2)*d2;
+    const a3=rnd(0,Math.PI*2), s3=rnd(10,14); D.vx=Math.cos(a3)*s3; D.vy=Math.sin(a3)*s3; D.x=tx-D.vx; D.y=ty-D.vy;
+    for(let i=2;i<4;i++){ const p=P[i]; p.x=rnd(20,220); p.y=rnd(20,140); const a=rnd(0,Math.PI*2), s=rnd(8,14); p.vx=Math.cos(a)*s; p.vy=Math.sin(a)*s; }
+    const ok1=P.every(p=>p.x>14&&p.x<W2-14&&p.y>14&&p.y<H2-14&&p.x+p.vx>14&&p.x+p.vx<W2-14&&p.y+p.vy>14&&p.y+p.vy<H2-14);
+    let ok2=true;
+    for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){
+      const A=P[i],B=P[j];
+      if(Math.hypot(A.x-B.x,A.y-B.y)<A.r+B.r+6) ok2=false;
+      if(Math.hypot(A.x+A.vx-B.x-B.vx,A.y+A.vy-B.y-B.vy)<A.r+B.r+6) ok2=false;
+    }
+    // ловушка должна быть ближе к старому месту, чем настоящая частица
+    const dT=Math.hypot(T.vx,T.vy), dD=Math.hypot(D.x+D.vx-T.x,D.y+D.vy-T.y);
+    if(ok1&&ok2&&dD<dT) return P;
+  }
+  return null;
+}
+function trackSvg(P, letters){
+  const dots1=P.map((p,i)=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${p.r}" fill="#E8EEF6"/>${i===0?`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${p.r+5}" fill="none" stroke="#E2B04A" stroke-width="2.5"/>`:""}`).join("");
+  const dots2=P.map((p,i)=>{const x=p.x+p.vx,y=p.y+p.vy; return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${p.r}" fill="#E8EEF6"/><text x="${(x+p.r+4).toFixed(1)}" y="${(y-p.r-2).toFixed(1)}" fill="#E2B04A" font-family="IBM Plex Mono,monospace" font-weight="600" font-size="11">${letters[i]}</text>`;}).join("");
+  const ghost=`<circle cx="${P[0].x.toFixed(1)}" cy="${P[0].y.toFixed(1)}" r="${P[0].r+5}" fill="none" stroke="#E2B04A" stroke-width="1.2" stroke-dasharray="3 3" opacity=".7"/>`;
+  const frame=(title,inner)=>`<svg viewBox="0 0 ${W2} ${H2+22}" role="img" aria-label="${title}"><rect width="${W2}" height="${H2}" fill="#0E1A2B"/><g opacity=".25" fill="#8FA4C2">${Array.from({length:14},(_,i)=>`<circle cx="${(i*37)%W2}" cy="${(i*53)%H2}" r=".8"/>`).join("")}</g>${inner}<text x="6" y="${H2+15}" fill="currentColor" font-family="IBM Plex Mono,monospace" font-size="9">${title}</text></svg>`;
+  return `<div class="sand" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))"><div class="fig" style="color:var(--muted)">${frame("Кадр 1 · t = 0,00 с",dots1)}</div><div class="fig" style="color:var(--muted)">${frame("Кадр 2 · t = 0,02 с",ghost+dots2)}</div></div><p class="src" style="margin-top:6px">Пунктирное кольцо на кадре 2 — где частица была на кадре 1.</p>`;
+}
+function genTrackQs(){
+  const L=["А","Б","В","Г"]; const out=[];
+  for(let k=0;k<3;k++){
+    const P=genTrack(); const lett=shuffle(L);
+    const d=Math.hypot(P[0].vx,P[0].vy);
+    const sizeName={3:"самая маленькая",5:"маленькая",7:"средняя",9:"самая крупная"}[P[0].r];
+    const q={q:"Частица в жёлтом кольце на кадре 1 — где она на кадре 2?", vis:trackSvg(P,lett),
+      opts:L.map(t=>({t:"Частица "+t})), a:L.indexOf(lett[0]),
+      w:`Ищем частицу того же размера (${sizeName}) рядом со старым местом. Она сместилась примерно на ${Math.round(d)} пикселей. Ближайшая к кольцу точка другого размера — это другая частица.`};
+    out.push(q);
+  }
+  return out;
+}
+function genSpeedQs(){
+  const out=[];
+  for(let k=0;k<2;k++){
+    const px=pick([15,20,24,25,30,36,40]), n=pick([2,4,5,8,10]), f=pick([25,50,100]), s=pick([0.02,0.05,0.1]);
+    const path=px*s, t=n/f, v=path/t;
+    const f3=x=>trim(nf(x,2))+" мм/с";
+    out.push(Qz(`Частица прошла ${px} пикселей за ${n} межкадровых интервала(ов). Частота съёмки ${f} кадр/с, масштаб ${trim(nf(s,2))} мм на пиксель. Какова скорость частицы?`,
+      f3(v), [f3(path*f), f3(path/n), trim(nf(px/t,1))+" мм/с", f3(v*2), f3(v/2)],
+      `Путь: ${px} × ${trim(nf(s,2))} = ${trim(nf(path,2))} мм. Время: ${n} / ${f} = ${trim(nf(t,3))} с. Скорость: ${trim(nf(path,2))} / ${trim(nf(t,3))} = ${f3(v)}.`, {cls:"num"}));
+  }
+  return out;
+}
+const EV = {
+  pass:{t:"Сближение", s:"прошли рядом, контакта нет"},
+  hit:{t:"Столкновение", s:"коснулись и разлетелись"},
+  stick:{t:"Слипание", s:"дальше летят вместе"}
+};
+function evPath(type, j){
+  const pts=[]; const cx=150+rnd(-15,15), cy=80+rnd(-8,8); const a=rnd(-0.35,0.35);
+  const rA=6, rB=5;
+  for(let k=0;k<9;k++){
+    const t=k-4; let A,B;
+    if(type==="pass"){ A=[cx+t*28, cy-14+t*3*Math.sin(a)]; B=[cx-t*26, cy+14+t*4*Math.cos(a)*0.4]; }
+    else if(type==="hit"){
+      if(t<=0){ A=[cx-rA+t*26, cy+t*6*a]; B=[cx+rB-t*24, cy-t*5]; }
+      else { A=[cx-rA-t*14, cy-t*20]; B=[cx+rB+t*16, cy+t*18]; }
+    } else {
+      if(t<=0){ A=[cx-rA+t*26, cy+t*8*a]; B=[cx+rB-t*22, cy-t*7]; }
+      else { A=[cx-rA+t*8, cy+t*9]; B=[cx+rB+t*8, cy+t*9]; }
+    }
+    pts.push({A,B});
+  }
+  return {pts,rA,rB};
+}
+function evSvg(P){
+  const g=P.pts.map((p,k)=>{ const o=(0.22+0.78*k/8).toFixed(2);
+    return `<g opacity="${o}"><circle cx="${p.A[0].toFixed(1)}" cy="${p.A[1].toFixed(1)}" r="${P.rA}" fill="#E8EEF6"/><circle cx="${p.B[0].toFixed(1)}" cy="${p.B[1].toFixed(1)}" r="${P.rB}" fill="#E2B04A"/></g>`; }).join("");
+  const lab=`<text x="${(P.pts[0].A[0]).toFixed(0)}" y="${(P.pts[0].A[1]-10).toFixed(0)}" fill="#8FA4C2" font-size="11" font-family="IBM Plex Mono,monospace">кадр 1</text><text x="${(P.pts[8].A[0]-20).toFixed(0)}" y="${(P.pts[8].A[1]-12).toFixed(0)}" fill="#8FA4C2" font-size="11" font-family="IBM Plex Mono,monospace">кадр 9</text>`;
+  return `<div class="fig" style="max-width:520px;margin-bottom:12px"><svg viewBox="0 0 300 160" role="img" aria-label="Наложение девяти кадров: две частицы"><rect width="300" height="160" fill="#0E1A2B"/>${g}${lab}<circle id="evA" r="${P.rA+2}" fill="none" stroke="#E8EEF6" stroke-width="1.5"/><circle id="evB" r="${P.rB+2}" fill="none" stroke="#E2B04A" stroke-width="1.5"/></svg></div><p class="src" style="margin-top:-6px">Девять кадров наложены друг на друга: бледные точки — ранние кадры, яркие — поздние. Кольца повторяют движение.</p>`;
+}
+let EVANIM=null;
+function genEventQs(){
+  const types=shuffle(["pass","hit","stick"]);
+  const why={
+    pass:"Траектории проходят рядом, но точки ни разу не касаются, и после встречи частицы летят прежним курсом.",
+    hit:"Частицы коснулись и резко сменили направление, разлетевшись в разные стороны.",
+    stick:"После контакта обе частицы движутся рядом с одинаковой скоростью, как один агрегат. Для научного вывода это нужно подтвердить на следующих кадрах."
+  };
+  return types.map(tp=>{ const P=evPath(tp); const keys=["pass","hit","stick"];
+    return {q:"Что произошло с частицами?", vis:evSvg(P), anim:P, opts:keys.map(k=>EV[k]), a:keys.indexOf(tp), w:why[tp]}; });
+}
+
+/* ===================== СТАНЦИЯ 3: компоновка ===================== */
+const MOD = [
+  {id:"obc", t:"Бортовой компьютер", u:0.25, m:90, req:true, c:"#1D4E89"},
+  {id:"eps", t:"Электропитание и аккумулятор", u:0.5, m:350, req:true, c:"#2B6CB0"},
+  {id:"com", t:"Радиосвязь и антенны", u:0.25, m:120, req:true, c:"#3D6A86"},
+  {id:"adcs", t:"Ориентация (маховики)", u:0.5, m:450, req:true, c:"#4A5D8C"},
+  {id:"ms", t:"Многоспектральная камера", u:1, m:750, c:"#2F8A4C"},
+  {id:"cam", t:"Оптическая камера", u:1, m:600, c:"#3F7A62"},
+  {id:"pad", t:"Эксперимент с пылью (как PAD)", u:1.5, m:800, c:"#7A4FB5"},
+  {id:"ais", t:"Приёмник AIS (суда)", u:0.25, m:80, c:"#B5651D"},
+  {id:"dos", t:"Дозиметр", u:0.25, m:100, c:"#9A6B3C"},
+  {id:"bat2", t:"Дополнительный аккумулятор", u:0.5, m:300, c:"#865A00"},
+  {id:"ir", t:"Тепловизор", u:1, m:900, c:"#A33A3A"}
+];
+const FRAME_M = 900; // каркас и панели, учебное значение
+const MISSIONS = [
+  {t:"Миссия 1. Каждую неделю снимать поля и считать NDVI.", need:["ms"]},
+  {t:"Миссия 2. Снять на видео, как слипаются пылинки в невесомости.", need:["pad"]},
+  {t:"Миссия 3. Следить за судами в океане и заодно измерять радиацию на орбите.", need:["ais","dos"]}
+];
+const NODES = [
+  {n:1, t:"Левая плата на стойках", bad:false, w:"Плата стоит на стойках, между ней и корпусом есть зазор. Всё правильно."},
+  {n:2, t:"Плата у нижней стенки", bad:true, w:"Плата прижата к корпусу без зазора. Нужны стойки: проверить высоту компонентов, крепёж и электрические зазоры."},
+  {n:3, t:"Кабель к датчику на панели", bad:true, w:"Кабель проходит через зону раскрытия панели. Её шарнир его пережмёт или порвёт. Нужно изменить трассу и оставить запас на подвижный узел."},
+  {n:4, t:"Кабель между платами", bad:false, w:"Кабель уложен с запасом и закреплён хомутом, без натяжения. Всё правильно."},
+  {n:5, t:"Разъём на правой плате", bad:true, w:"Разъём перекрыт крепёжной стойкой. До него не добраться при монтаже, испытаниях и демонтаже."},
+  {n:6, t:"Разъём на левой плате", bad:false, w:"Разъём открыт, к нему можно подключиться. Всё правильно."}
+];
+function layoutSvg(sel, showRes){
+  const mk=(n,x,y)=>{ const N=NODES[n-1]; let fill="var(--frame)";
+    if(showRes){ fill = N.bad ? (sel.has(n)?"var(--ok)":"var(--err)") : (sel.has(n)?"var(--err)":"var(--ok)"); }
+    else if(sel.has(n)) fill="var(--err)";
+    return `<g class="hot" data-act="node" data-n="${n}" tabindex="0" role="button" aria-label="Узел ${n}: ${N.t}"><circle cx="${x}" cy="${y}" r="12" fill="${fill}" stroke="var(--surface)" stroke-width="2"/><text x="${x}" y="${y+4.5}" text-anchor="middle" fill="var(--surface)" font-family="IBM Plex Mono,monospace" font-weight="600" font-size="13">${n}</text></g>`; };
+  return `<svg viewBox="0 -50 340 290" role="img" aria-label="Схема компоновки 3U в разрезе">
+    <path d="M320,60 L220,60 A100,100 0 0,1 320,-40 Z" fill="var(--accent)" opacity=".16"/>
+    <path d="M220,60 A100,100 0 0,1 320,-40" fill="none" stroke="var(--accent)" stroke-dasharray="4 4"/>
+    <text x="214" y="-28" fill="var(--accentInk)" font-size="11" text-anchor="end">зона раскрытия панели</text>
+    <rect x="20" y="60" width="300" height="150" fill="none" stroke="var(--ink)" stroke-width="3" rx="3"/>
+    <line x1="120" y1="62" x2="120" y2="208" stroke="var(--muted)" stroke-dasharray="3 4"/>
+    <line x1="220" y1="62" x2="220" y2="208" stroke="var(--muted)" stroke-dasharray="3 4"/>
+    <text x="70" y="226" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono,monospace" font-size="11">1U</text>
+    <text x="170" y="226" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono,monospace" font-size="11">2U</text>
+    <text x="270" y="226" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono,monospace" font-size="11">3U</text>
+    <rect x="222" y="50" width="98" height="8" fill="var(--frame)" opacity=".85"/>
+    <circle cx="320" cy="56" r="4" fill="var(--ink)"/>
+    <text x="216" y="56" text-anchor="end" fill="var(--muted)" font-size="10">панель (сложена) →</text>
+    <!-- узел 1: плата на стойках -->
+    <rect x="22" y="84" width="38" height="5" fill="var(--muted)"/><rect x="22" y="181" width="38" height="5" fill="var(--muted)"/>
+    <rect x="60" y="74" width="7" height="122" fill="var(--veg)"/>
+    <!-- узел 6: свободный разъём -->
+    <rect x="67" y="100" width="10" height="12" fill="var(--ink)"/>
+    <!-- узел 4: кабель с запасом и хомутом -->
+    <path d="M77,106 C112,88 104,150 150,132 S190,160 200,176" fill="none" stroke="var(--accent)" stroke-width="3"/>
+    <rect x="144" y="126" width="12" height="10" fill="none" stroke="var(--ink)" stroke-width="2"/>
+    <rect x="196" y="172" width="10" height="10" fill="var(--ink)"/>
+    <!-- узел 2: плата прижата -->
+    <rect x="128" y="201" width="84" height="7" fill="var(--veg)"/>
+    <rect x="140" y="194" width="14" height="7" fill="var(--muted)"/><rect x="170" y="196" width="22" height="5" fill="var(--muted)"/>
+    <!-- правая плата на стойках, разъём перекрыт стойкой -->
+    <rect x="230" y="150" width="84" height="6" fill="var(--veg)"/>
+    <rect x="236" y="156" width="5" height="52" fill="var(--muted)"/><rect x="304" y="156" width="5" height="52" fill="var(--muted)"/>
+    <rect x="290" y="137" width="14" height="13" fill="var(--ink)"/>
+    <rect x="294" y="64" width="7" height="86" fill="var(--muted)" opacity=".9"/>
+    <!-- узел 3: кабель через зону раскрытия -->
+    <rect x="256" y="140" width="10" height="10" fill="var(--ink)"/>
+    <path d="M261,140 C258,70 262,10 290,-6 S312,30 306,50" fill="none" stroke="var(--err)" stroke-width="3"/>
+    ${mk(1,40,132)}${mk(2,170,180)}${mk(3,276,0)}${mk(4,118,96)}${mk(5,276,120)}${mk(6,92,128)}
+  </svg>`;
+}
+
+/* ===================== СТАНЦИЯ 4: солнечная панель ===================== */
+function panelModel(d, ang, shade){
+  const G=Math.min(1.8, Math.pow(20/d,2)*Math.cos(ang*Math.PI/180));
+  if(G<=0.005) return {U:0,I:0,P:0,G};
+  let I=0.12*G, U=Math.max(0, Math.min(5.6, 5.0+0.32*Math.log(G)));
+  if(shade){ I*=0.45; U=Math.max(0,U-0.15); }
+  return {U,I,P:U*I,G};
+}
+function genPowerQs(){
+  const out=[];
+  for(let k=0;k<2;k++){
+    const U=pick([4.5,5,5.5,6]), I=pick([0.08,0.1,0.12,0.15,0.2]); const P=U*I;
+    const f=x=>trim(nf(x,3))+" Вт";
+    out.push(Qz(`Панель выдаёт напряжение ${trim(nf(U,1))} В и ток ${trim(nf(I,2))} А. Какая мощность?`, f(P),
+      [f(U/I/100), f(U+I), f(P*10), f(P/10), f(I/U)], `P = U · I = ${trim(nf(U,1))} × ${trim(nf(I,2))} = ${f(P)}.`, {cls:"num"}));
+  }
+  out.push(Qo("Где панель даст больше мощности, если всё остальное одинаково?",
+    [{t:"Лампа в 15 см от панели"},{t:"Лампа в 40 см от панели"},{t:"Разницы нет"}],0,
+    "Чем ближе лампа, тем больше света падает на элементы и тем больше ток. Проверьте это ползунком «Расстояние»."));
+  out.push(Qo("Лучи падают на панель под каким углом выгоднее всего?",
+    [{t:"Перпендикулярно панели (0°)"},{t:"Под углом 60°"},{t:"Вдоль панели (90°)"}],0,
+    "При косом освещении на ту же площадь падает меньше света. Вдоль панели свет почти не попадает на элементы."));
+  out.push(Qo("Зачем на каждой панели учебного конструктора два фоторезистора?",
+    [{t:"Дают сигнал об освещённости"},{t:"Питают бортовой компьютер"},{t:"Заряжают аккумулятор ночью"}],0,
+    "Фоторезисторы меняют сопротивление от света и сообщают, насколько освещена грань. Аппаратуру они не питают."));
+  out.push(Qo("Спутник вошёл в тень Земли. Откуда электроника берёт питание?",
+    [{t:"Из аккумулятора"},{t:"От солнечных панелей"},{t:"От фоторезисторов"}],0,
+    "В тени панели не освещены. Работу продолжает аккумулятор, который зарядился на солнечной части орбиты."));
+  out.push(Qo("Спутник входит в тень, аккумулятор частично разряжен, камера готова к видеозаписи. Что делать?",
+    [{t:"Перенести энергоёмкую операцию", s:"по расписанию и правилам безопасного режима"},{t:"Запустить все приборы немедленно"},{t:"Не обращать внимания на заряд"}],0,
+    "Сначала энергетический бюджет. Видео записывают, когда хватает энергии и памяти. В реальной миссии решение зависит от требований эксперимента."));
+  return out;
+}
+
+/* ===================== СТАНЦИЯ 5: механизмы ===================== */
+const MECH = {
+  hinge:{t:"Шарнир", s:"поворот вокруг оси"},
+  slide:{t:"Ползун и направляющая", s:"движение вдоль оси"},
+  gear:{t:"Редуктор", s:"зубчатая передача"},
+  lever:{t:"Рычаг", s:"выигрыш в силе"}
+};
+function mechQ(q,a,w){ const keys=Object.keys(MECH); return Qo(q, keys.map(k=>MECH[k]), keys.indexOf(a), w); }
+function genMechQs(){
+  const z1=pick([10,12,15,20]), k=pick([2,3,4]), z2=z1*k, n1=pick([60,90,120]);
+  return [
+    mechQ("Повернуть солнечную панель вокруг оси.","hinge","Поворот относительно фиксированной оси даёт шарнир."),
+    mechQ("Передвинуть камеру вдоль направляющей.","slide","Поступательное движение вдоль оси даёт ползун на направляющей."),
+    mechQ("Уменьшить скорость вращения двигателя и увеличить крутящий момент.","gear","Редуктор меняет угловую скорость и крутящий момент."),
+    mechQ("Небольшой силой приподнять тяжёлую крышку стенда.","lever","Длинное плечо рычага даёт выигрыш в силе."),
+    Qo("Электродвигатель вместе с передачей вращает площадку и наводит камеру. Что это?",
+      [{t:"Звено"},{t:"Механизм"},{t:"Машина"}],2,"Машина использует механизмы, чтобы выполнять полезную работу: здесь двигатель и передача наводят камеру."),
+    Qo("Крышка и приклёпанная к ней петля всегда движутся как одно целое. Что это?",
+      [{t:"Звено"},{t:"Механизм"},{t:"Машина"}],0,"Звено — деталь или группа жёстко соединённых деталей, которые движутся как одно целое."),
+    Qo("Сколько степеней свободы обычно у шарнира?",[{t:"0"},{t:"1"},{t:"2"},{t:"3"}],1,"Шарнир разрешает только поворот вокруг одной оси, то есть одну степень свободы.",{cls:"num"}),
+    Qo("Сколько степеней свободы у ползуна на направляющей?",[{t:"0"},{t:"1"},{t:"2"},{t:"3"}],1,"Ползун перемещается только вдоль направляющей: одна степень свободы.",{cls:"num"}),
+    Qo("Сложенная антенна переходит из компактного положения в рабочее. Какое это движение?",
+      [{t:"Вращение"},{t:"Поворот"},{t:"Перемещение"},{t:"Раскрытие"}],3,"Смена компактного положения на рабочее называется раскрытием."),
+    Qz(`Шестерня двигателя имеет ${z1} зубьев, колесо — ${z2} зубьев. Двигатель делает ${n1} об/мин. Сколько оборотов в минуту делает колесо?`,
+      trim(nf(n1/k,1))+" об/мин",[(n1*k)+" об/мин", n1+" об/мин", trim(nf(n1/k/2,1))+" об/мин", (n1+z2)+" об/мин"],
+      `Передаточное число i = ${z2} / ${z1} = ${k}. Колесо вращается в ${k} раза медленнее: ${n1} / ${k} = ${trim(nf(n1/k,1))} об/мин. Момент на колесе при этом в ${k} раза больше (без учёта потерь).`,{cls:"num"})
+  ];
+}
+function gearPath(z, m){
+  const r=m*z/2, ra=r+m, rf=r-1.25*m; const pts=[]; const step=Math.PI*2/z;
+  for(let i=0;i<z;i++){
+    const a=i*step;
+    pts.push([rf,a],[rf,a+step*0.18],[ra,a+step*0.32],[ra,a+step*0.52],[rf,a+step*0.68],[rf,a+step]);
+  }
+  return "M"+pts.map(([R,a])=>(R*Math.cos(a)).toFixed(2)+","+(R*Math.sin(a)).toFixed(2)).join("L")+"Z";
+}
+
+/* ===================== СТАНЦИЯ 6: кинематика и силы ===================== */
+function genKinQs(){
+  const out=[];
+  { const ph=pick([60,90,120,180]), t=pick([2,3,4,5,6]); const w=ph/t; const f=x=>trim(nf(x,1))+" °/с";
+    out.push(Qz(`Панель раскрылась на ${ph}° за ${t} с. Какова средняя угловая скорость?`, f(w),[f(ph*t),f(t/ph*100),f(w*2),f(w/2)],
+      `ω = Δφ / Δt = ${ph} / ${t} = ${f(w)}.`,{cls:"num"})); }
+  { const w=pick([30,45,60,90]); const r=w*Math.PI/180; const f=x=>"≈ "+trim(nf(x,2))+" рад/с";
+    out.push(Qz(`Угловая скорость ${w} °/с. Сколько это в радианах в секунду?`, f(r),[f(w/57.3*10),f(w*3.14),f(r*2),f(w/100)],
+      `1 рад ≈ 57,3°. ${w} / 57,3 ≈ ${trim(nf(r,2))} рад/с.`,{cls:"num"})); }
+  { const s=pick([40,60,80,120]), t=pick([2,4,5,8]); const v=s/t; const f=x=>trim(nf(x,1))+" мм/с";
+    out.push(Qz(`Каретка с камерой проехала ${s} мм по направляющей за ${t} с. Какова её средняя скорость?`, f(v),[f(s*t),f(t/s*100),f(v*2),f(v/2)],
+      `v = s / t = ${s} / ${t} = ${f(v)}.`,{cls:"num"})); }
+  { const F=pick([1,2,3,4,5]), l=pick([0.02,0.04,0.05,0.1]); const M=F*l; const f=x=>trim(nf(x,3))+" Н·м";
+    out.push(Qz(`Сила ${F} Н приложена перпендикулярно к плечу ${trim(nf(l,2))} м. Какой момент она создаёт?`, f(M),[f(F/l/100),f(F+l),f(M*10),f(M/10)],
+      `M = F · l = ${F} × ${trim(nf(l,2))} = ${f(M)}.`,{cls:"num"})); }
+  { const l=pick([0.02,0.04,0.05,0.1]), F=pick([2,3,4,5]); const M=F*l; const f=x=>trim(nf(x,2))+" Н";
+    out.push(Qz(`Чтобы повернуть панель, нужен момент ${trim(nf(M,2))} Н·м. Плечо силы ${trim(nf(l,2))} м. Какая сила нужна?`, f(F),[f(M*l),f(F*10),f(F/2),f(M+l)],
+      `F = M / l = ${trim(nf(M,2))} / ${trim(nf(l,2))} = ${f(F)}.`,{cls:"num"})); }
+  { const w=pick([15,20,30,45]), t=pick([2,3,4,6]); const ph=w*t; const f=x=>trim(nf(x,1))+" с";
+    out.push(Qz(`Привод поворачивает панель со скоростью ${w} °/с. За сколько секунд она откроется на ${ph}°?`, f(t),[f(ph*w),f(t*2),f(t+1),f(w/t)],
+      `Δt = Δφ / ω = ${ph} / ${w} = ${f(t)}.`,{cls:"num"})); }
+  return shuffle(out);
+}
+
+/* ===================== состояние ===================== */
+function mkQ(gen){ return {gen, qs:gen(), i:0, score:0, answered:null, done:false}; }
+const Q = {
+  ndvi:mkQ(genNdvi), track:mkQ(genTrackQs), speed:mkQ(genSpeedQs), event:mkQ(genEventQs),
+  power:mkQ(genPowerQs), mech:mkQ(genMechQs), kin:mkQ(genKinQs)
+};
+const S = {
+  map:genMap(), mapStar:false,
+  lay:{mi:0, sel:new Set(["obc","eps","com","adcs"]), msg:null, stars:[false,false,false]},
+  err:{sel:new Set(), checked:false, star:false},
+  ndviSb:{red:0.10, nir:0.55},
+  pw:{d:20, a:0, shade:false, log:[]},
+  gr:{z1:12, z2:36, n1:60},
+  kn:{ph:90, t:3, F:2, l:0.05, anim:null},
+};
+const TABS = [
+  {id:"ndvi", k:"Станция 1", t:"Рассчитай NDVI"},
+  {id:"pad", k:"Станция 2", t:"Частицы PAD"},
+  {id:"lay", k:"Станция 3", t:"Компоновка 3U"},
+  {id:"pw", k:"Станция 4", t:"Мощность панели"},
+  {id:"mech", k:"Станция 5", t:"Подбери механизм"},
+  {id:"kin", k:"Станция 6", t:"Скорость и момент"}
+];
+function stat(id){
+  const q=k=>[Q[k].score,Q[k].qs.length,Q[k].done];
+  let parts;
+  if(id==="ndvi") parts=[q("ndvi"),[S.mapStar?1:0,1,S.mapStar]];
+  else if(id==="pad") parts=[q("track"),q("speed"),q("event")];
+  else if(id==="lay") parts=[[S.lay.stars.filter(Boolean).length,3,S.lay.mi>=3],[S.err.star?1:0,1,S.err.checked]];
+  else if(id==="pw") parts=[q("power")];
+  else if(id==="mech") parts=[q("mech")];
+  else parts=[q("kin")];
+  return {got:parts.reduce((s,p)=>s+p[0],0), max:parts.reduce((s,p)=>s+p[1],0), done:parts.every(p=>p[2])};
+}
+let cur="ndvi";
+try{ const h=location.hash.slice(1); if(TABS.some(t=>t.id===h)) cur=h; }catch(e){}
+
+function renderTabs(){
+  let total=0, max=0;
+  $("tabs").innerHTML = TABS.map(t=>{ const s=stat(t.id); total+=s.got; max+=s.max;
+    return `<button class="tab${s.done?" done":""}" role="tab" aria-selected="${cur===t.id}" data-tab="${t.id}"><span class="k">${t.k}</span><span class="t">${t.t}</span><span class="s">${s.done?"готово · ":""}★ ${s.got} из ${s.max}</span></button>`; }).join("");
+  $("stars").textContent = total+" из "+max;
+}
+
+/* ---------- общий квиз ---------- */
+function quiz(key, title, lead, doneText){
+  const s=Q[key];
+  if(s.done){
+    return `<div class="panel"><div class="qhead"><h3>${title}</h3></div><div class="result"><div class="big">${s.score} из ${s.qs.length} ★</div><p>${doneText}</p><button class="next" data-act="restart" data-key="${key}">Новые задания</button></div></div>`;
+  }
+  const it=s.qs[s.i];
+  let fb="";
+  if(s.answered!==null){
+    const ok=s.answered===it.a;
+    fb=`<div class="fb ${ok?"ok":"err"}"><b>${ok?"Верно!":"Не совсем. Правильно: "+esc(it.opts[it.a].t)}</b>${esc(it.w)}</div><button class="next" data-act="next" data-key="${key}">${s.i+1<s.qs.length?"Дальше":"Итог"}</button>`;
+  }
+  return `<div class="panel"><div class="qhead"><h3>${title}</h3><span class="qn">Задание ${s.i+1} из ${s.qs.length} · ★ ${s.score}</span></div>
+    ${lead?`<p class="lead">${lead}</p>`:""}${it.vis||""}<div class="question">${esc(it.q)}</div>
+    <div class="opts">${it.opts.map((o,i)=>{ let c=""; if(s.answered!==null){ if(i===it.a) c=" right"; else if(i===s.answered) c=" wrong"; }
+      return `<button class="opt${it.cls?" "+it.cls:""}${c}" data-act="ans" data-key="${key}" data-id="${i}" ${s.answered!==null?"disabled":""}>${esc(o.t)}${o.s?`<small>${esc(o.s)}</small>`:""}</button>`; }).join("")}</div>${fb}</div>`;
+}
+
+/* ---------- станция 1 ---------- */
+function ndviReadout(){
+  const {red,nir}=S.ndviSb; const v=ndvi(red,nir);
+  const txt = v>0.3?"Вероятно, зелёная растительность":v>0?"Мало зелени: почва, асфальт, сухая трава":"Отрицательный индекс: вероятно, вода";
+  return {v,txt};
+}
+function stNdvi(){
+  const {red,nir}=S.ndviSb; const r=ndviReadout();
+  const sand=`<div class="panel"><p class="eyebrow">Тема 7 · Программирование ДЗЗ</p><h2>Калькулятор NDVI</h2>
+    <p class="lead">Спутниковый снимок — это таблица чисел. Для каждого пикселя известна яркость в красном канале (RED) и в ближнем инфракрасном (NIR). Двигайте ползунки и смотрите, как меняется индекс.</p>
+    <div class="sand"><div class="ctrl">
+      <label for="sRed">RED, красный канал <output id="oRed">${nf(red,2)}</output></label><input type="range" id="sRed" min="0.01" max="0.6" step="0.01" value="${red}">
+      <label for="sNir">NIR, ближний ИК <output id="oNir">${nf(nir,2)}</output></label><input type="range" id="sNir" min="0.01" max="0.8" step="0.01" value="${nir}">
+      <div class="row"><button class="sec" data-act="preset" data-k="veg">Лес</button><button class="sec" data-act="preset" data-k="soil">Поле без всходов</button><button class="sec" data-act="preset" data-k="water">Озеро</button></div>
+    </div><div>
+      <div class="formula">NDVI = (NIR − RED) / (NIR + RED)</div>
+      <div class="meters" style="grid-template-columns:1fr;margin-top:10px"><div class="meter hi"><span>NDVI</span><b id="oNdvi">${sg(r.v)}</b></div></div>
+      <div class="scale"><div class="pin" id="pin" style="left:${((r.v+1)/2*100).toFixed(1)}%"></div></div>
+      <div class="scale-lab"><span>−1 вода</span><span>0 почва</span><span>+1 зелень</span></div>
+      <p id="oTxt" style="font-weight:600;margin:10px 0 0">${r.txt}</p>
+    </div></div>
+    <p class="src">В Python это одна строка для тысяч пикселей сразу: <span class="formula" style="padding:2px 6px">ndvi = (nir - red) / (nir + red + 1e-6)</span></p></div>`;
+  const M=S.map;
+  const cells=M.v.map((x,i)=>{ let c=""; if(M.checked){ const need=x>0.3, has=M.sel.has(i); if(need&&!has) c=" miss"; else if(!need&&has) c=" extra"; } else if(M.sel.has(i)) c=" sel";
+    if(M.checked && M.sel.has(i) && x>0.3) c=" sel";
+    return `<button class="cell${c}" style="background:${cellColor(x)}" data-act="cell" data-i="${i}" aria-pressed="${M.sel.has(i)}" aria-label="Клетка ${i+1}, NDVI ${sg(x)}">${sg(x)}</button>`; }).join("");
+  let mfb="";
+  if(M.checked){
+    const need=M.v.filter(x=>x>0.3).length;
+    mfb = M.ok ? `<div class="fb ok"><b>Карта верна: ${need} клеток из 16 — растительность</b>Пороговая обработка делает простую тематическую карту. Программа проверит миллион пикселей за доли секунды, а человек — нет. Для настоящей карты нужна ещё геопривязка.</div>`
+      : `<div class="fb err"><b>Есть ошибки</b>Пунктирная красная рамка — клетка с NDVI больше +0,30, которую пропустили. Сплошная красная — выбрана лишняя. Нужно выбрать ${need} клеток.</div>`;
+  }
+  const map=`<div class="panel"><div class="qhead"><h3>Тематическая карта</h3><span class="qn">${S.mapStar?"★ получена":"1 ★"}</span></div>
+    <p class="lead">Выделите все клетки, где NDVI больше +0,30. Это и есть программа-порог, только вручную.</p>
+    <div class="map">${cells}</div>${mfb}
+    <div class="row" style="margin-top:12px"><button class="next" style="margin:0" data-act="mapcheck">Проверить карту</button><button class="sec" data-act="mapnew">Новый снимок</button></div></div>`;
+  return sand + quiz("ndvi","Посчитай NDVI пикселя","Значения RED и NIR учебные, не измерения конкретного спутника.","Вы умеете превращать снимок в число. Переходите к станции 2.") + map;
+}
+
+/* ---------- станция 2 ---------- */
+function stPad(){
+  const intro=`<div class="panel"><p class="eyebrow">Тема 8 · Видеоданные PAD</p><h2>Найди и отследи частицы</h2>
+    <p class="lead">Камера PAD снимает пылинки 50 раз в секунду: между соседними кадрами 0,02 с. Программа находит на каждом кадре светлые пятна, получает их координаты (x, y) и соединяет в траектории. Здесь вы сделаете то же самое вручную.</p>
+    <div class="row"><span class="formula">путь = пиксели × масштаб</span><span class="formula">время = интервалы / частота</span><span class="formula">v = путь / время</span></div></div>`;
+  return intro
+   + quiz("track","1. Трекинг: та же частица","Сравнивайте положение и размер. Ближайшая точка не всегда та же частица.","Траектория — это последовательность координат одной частицы. Вы её построили.")
+   + quiz("speed","2. Скорость: от пикселей к миллиметрам","Масштаб заранее определяют калибровкой камеры.","Скорость посчитана правильно. Так и строится научная таблица PAD.")
+   + quiz("event","3. Что произошло?","Сближение, столкновение и слипание — разные события.","Одного сближения мало, чтобы утверждать слипание: нужны дальнейшие кадры и хорошее качество изображения.");
+}
+
+/* ---------- станция 3 ---------- */
+function stLay(){
+  const L=S.lay;
+  const selMods=MOD.filter(m=>L.sel.has(m.id));
+  const U=selMods.reduce((s,m)=>s+m.u,0), Mm=selMods.reduce((s,m)=>s+m.m,0)+FRAME_M;
+  let cells=""; let used=0;
+  for(const m of selMods){ const span=Math.round(m.u*4); if(used+span>12){ cells+=`<div class="blk" style="grid-column:span ${12-used};background:var(--err)">не влезает: ${esc(m.t)}</div>`; used=12; break; }
+    cells+=`<div class="blk" style="grid-column:span ${span};background:${m.c}" title="${esc(m.t)}">${esc(m.t)}</div>`; used+=span; }
+  const mission = L.mi<3 ? MISSIONS[L.mi] : null;
+  const build=`<div class="panel"><p class="eyebrow">Тема 9 · Конструирование МКА</p><h2>Собери 3U под миссию</h2>
+    <p class="lead">В корпус CubeSat 3U помещается 3 единицы объёма (1U — кубик 10 × 10 × 10 см). Учебный бюджет массы — 4 кг, из них 900 г уже занимают каркас и солнечные панели. Служебные системы нужны любому спутнику, их нельзя убрать. Добавьте полезную нагрузку под миссию и проверьте бюджет.</p>
+    ${mission?`<div class="mission">${esc(mission.t)}</div>`:`<div class="fb ok"><b>Все три миссии собраны</b>Сначала требования и проверки — затем окончательная геометрия.</div>`}
+    <div style="margin-top:14px"><div class="stack" aria-label="Заполнение корпуса 3U">${cells}</div><div class="ulab"><span>1U</span><span>2U</span><span>3U</span></div></div>
+    <div class="meters" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-top:12px">
+      <div class="meter"><span>Объём</span><b>${trim(nf(U,2))} / 3 U</b><div class="bar${U>3?" over":""}"><i style="width:${Math.min(100,U/3*100)}%"></i></div></div>
+      <div class="meter"><span>Масса с каркасом</span><b>${trim(nf(Mm/1000,2))} / 4 кг</b><div class="bar${Mm>4000?" over":""}"><i style="width:${Math.min(100,Mm/4000*100)}%"></i></div></div>
+    </div>
+    <div class="mods" style="margin-top:14px">${MOD.map(m=>`<button class="mod${m.req?" req":""}" data-act="mod" data-id="${m.id}" aria-pressed="${L.sel.has(m.id)}"><b>${esc(m.t)}</b><span>${trim(nf(m.u,2))}U · ${m.m} г${m.req?" · обязательно":""}</span></button>`).join("")}</div>
+    ${L.msg?`<div class="fb ${L.msg.ok?"ok":"err"}"><b>${L.msg.h}</b>${L.msg.list?`<ul>${L.msg.list.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:esc(L.msg.t||"")}</div>`:""}
+    <div class="row" style="margin-top:12px">${mission?`<button class="next" style="margin:0" data-act="laycheck">Проверить компоновку</button>`:`<button class="next" style="margin:0" data-act="layreset">Собрать заново</button>`}</div>
+    <p class="src">Объёмы и массы модулей учебные. Габариты реальной платформы проверяют отдельно.</p></div>`;
+  const E=S.err;
+  const errs=`<div class="panel"><div class="qhead"><h3>Найди три ошибки в компоновке</h3><span class="qn">${E.star?"★ получена":"1 ★"}</span></div>
+    <p class="lead">Нажмите на номера узлов, где есть ошибка (на схеме или на карточках). Ошибок ровно три.</p>
+    <div class="fig" style="max-width:640px">${layoutSvg(E.sel,E.checked)}</div>
+    <div class="nodes">${NODES.map(N=>{ let c=""; if(E.checked) c = (N.bad===E.sel.has(N.n))?" good":""; return `<button class="node${c}" data-act="node" data-n="${N.n}" aria-pressed="${E.sel.has(N.n)}"><i>${N.n}</i><span>${esc(N.t)}</span></button>`; }).join("")}</div>
+    ${E.checked?`<div class="fb ${E.ok?"ok":"err"}"><b>${E.ok?"Все три ошибки найдены":"Не всё совпало"}</b><ul>${NODES.map(N=>`<li><b style="display:inline">${N.n}.</b> ${esc(N.w)}</li>`).join("")}</ul>Компоновка удачна, если её можно не только собрать, но и проверить.</div>`:""}
+    <div class="row" style="margin-top:12px">${E.checked?`<button class="sec" data-act="errreset">Попробовать снова</button>`:`<button class="next" style="margin:0" data-act="errcheck">Проверить</button>`}</div></div>`;
+  return build+errs;
+}
+
+/* ---------- станция 4 ---------- */
+function pwSvg(){
+  const {d,a,shade}=S.pw; const lx=40+ (50-d)/40*0; // лампа слева, панель справа
+  const px=250, py=95; const lampX=px-d*4.4;
+  const rays=[-24,-8,8,24].map(o=>`<line x1="${lampX+10}" y1="${95+o*0.3}" x2="${px-6}" y2="${py+o}" stroke="var(--accent)" stroke-width="1.5" opacity="${Math.max(0.2,Math.min(1,(20/d)))}"/>`).join("");
+  return `<svg viewBox="0 0 320 190" role="img" aria-label="Лампа и солнечная панель">
+    <line x1="0" y1="170" x2="320" y2="170" stroke="var(--line)"/>
+    ${rays}
+    <g><circle cx="${lampX}" cy="95" r="12" fill="var(--accent)"/><rect x="${lampX-5}" y="107" width="10" height="63" fill="var(--muted)"/></g>
+    <g id="pwPanel" transform="rotate(${a} ${px} ${py})">
+      <rect x="${px-5}" y="${py-50}" width="10" height="100" fill="var(--frame)"/>
+      ${[0,1].map(i=>`<rect x="${px-4}" y="${py-46+i*48}" width="8" height="44" fill="var(--water)" opacity=".85"/>`).join("")}
+      ${shade?`<rect x="${px-10}" y="${py-52}" width="20" height="40" fill="var(--ink)" opacity=".75"/>`:""}
+    </g>
+    <rect x="${px+40}" y="${py+50}" width="4" height="25" fill="var(--muted)"/>
+    <text x="${(lampX+px)/2}" y="185" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono,monospace" font-size="11">${d} см</text>
+  </svg>`;
+}
+function pwMet(){ const P=S.pw, r=panelModel(P.d,P.a,P.shade); return `<div class="meter"><span>Напряжение U</span><b>${nf(r.U,2)} В</b></div><div class="meter"><span>Ток I</span><b>${nf(r.I,3)} А</b></div><div class="meter hi"><span>Мощность P</span><b>${nf(r.P,3)} Вт</b></div>`; }
+function stPw(){
+  const P=S.pw; const r=panelModel(P.d,P.a,P.shade);
+  const log=P.log.length?`<div class="tbl"><table><thead><tr><th>№</th><th>Условие</th><th>U, В</th><th>I, А</th><th>P, Вт</th></tr></thead><tbody>${P.log.map((x,i)=>`<tr><td class="n">${i+1}</td><td>${esc(x.c)}</td><td class="n">${nf(x.U,2)}</td><td class="n">${nf(x.I,3)}</td><td class="n">${nf(x.P,3)}</td></tr>`).join("")}</tbody></table></div>`
+    : `<p class="src" style="margin:0">Таблица пуста. Запишите три измерения: лампа близко, лампа далеко, частичное затенение.</p>`;
+  const sand=`<div class="panel"><p class="eyebrow">Тема 10 · Солнечные батареи</p><h2>Измерь мощность панели</h2>
+    <p class="lead">Солнечный свет → фотоэлектрические элементы → регулятор → аккумулятор → компьютер и нагрузка. Меняйте расстояние до лампы, угол панели и тень. Приборы покажут напряжение и ток, а мощность считается по формуле <span class="formula" style="padding:2px 6px">P = U · I</span>.</p>
+    <div class="sand"><div class="fig" id="pwFig">${pwSvg()}</div><div class="ctrl">
+      <label for="sD">Расстояние до лампы <output id="oD">${P.d} см</output></label><input type="range" id="sD" min="10" max="50" step="1" value="${P.d}">
+      <label for="sA">Угол между лучами и нормалью панели <output id="oA">${P.a}°</output></label><input type="range" id="sA" min="0" max="85" step="5" value="${P.a}">
+      <div class="row"><span style="font-weight:600;font-size:14px">Тень на панели</span><div class="seg"><button data-act="shade" data-v="0" aria-pressed="${!P.shade}">Нет</button><button data-act="shade" data-v="1" aria-pressed="${P.shade}">Частичная</button></div></div>
+      <div class="meters" id="pwMet">${pwMet()}</div>
+      <div class="row"><button class="next" style="margin:0" data-act="pwlog">Записать измерение</button>${P.log.length?`<button class="sec" data-act="pwclear">Очистить таблицу</button>`:""}</div>
+    </div></div>
+    <div style="margin-top:14px">${log}</div>
+    <p class="src">Учебная модель, не паспортные данные конструктора. Безопасность: только низковольтное оборудование, не закорачивайте ФЭП и аккумуляторы.</p></div>`;
+  return sand + quiz("power","Задания по энергии","Ответы на вопросы о расстоянии и угле можно проверить на модели выше.","Энергия ограничивает каждый эксперимент на орбите. Вы умеете её считать.");
+}
+
+/* ---------- станция 5 ---------- */
+function gearSvg(){
+  const G=S.gr; const i=G.z2/G.z1, n2=G.n1/i;
+  const m=6, r1=m*G.z1/2, r2=m*G.z2/2, pad=m*2+6; const W=2*r1+2*r2+pad*2, H=2*Math.max(r1,r2)+pad*2;
+  const c1x=pad+r1, c2x=pad+2*r1+r2, cy=H/2;
+  const svg=`<svg viewBox="0 0 ${W.toFixed(0)} ${(H+26).toFixed(0)}" role="img" aria-label="Зубчатая пара: шестерня ${G.z1} зубьев, колесо ${G.z2} зубьев">
+    <g transform="translate(${c1x},${cy})"><g id="g1"><path d="${gearPath(G.z1,m)}" fill="var(--accent)"/><circle r="${m*1.2}" fill="var(--surface)"/><line x1="0" y1="0" x2="${r1-m*1.5}" y2="0" stroke="var(--ink)" stroke-width="3"/></g></g>
+    <g transform="translate(${c2x},${cy})"><g id="g2"><path d="${gearPath(G.z2,m)}" fill="var(--frame)"/><circle r="${m*1.5}" fill="var(--surface)"/><line x1="0" y1="0" x2="${r2-m*1.5}" y2="0" stroke="var(--surface)" stroke-width="3"/></g></g>
+    <text x="${c1x}" y="${H+18}" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono,monospace" font-size="${Math.max(12,W/30).toFixed(0)}">двигатель</text>
+    <text x="${c2x}" y="${H+18}" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono,monospace" font-size="${Math.max(12,W/30).toFixed(0)}">выход</text></svg>`;
+  return svg;
+}
+function gearMet(){ const G=S.gr; const i=G.z2/G.z1, n2=G.n1/i; return `<div class="meters"><div class="meter"><span>Передаточное число</span><b>${trim(nf(i,2))}</b></div><div class="meter hi"><span>Скорость выхода</span><b>${trim(nf(n2,1))}</b><span>об/мин</span></div><div class="meter"><span>Момент на выходе</span><b>×${trim(nf(i,2))}</b><span>без потерь</span></div></div><p style="margin:10px 0 0">${i>1?"Колесо больше шестерни: скорость падает, момент растёт. Это редуктор.":i<1?"Колесо меньше шестерни: скорость растёт, момент падает. Это мультипликатор.":"Колёса одинаковые: меняется только направление вращения."}</p>`; }
+function stMech(){
+  const G=S.gr;
+  const sand=`<div class="panel"><p class="eyebrow">Тема 11 · Теория механизмов и машин</p><h2>Редуктор: как меняется движение</h2>
+    <p class="lead">Привод (двигатель) → передача (редуктор) → вал или рычаг → подвижная деталь. Маленькая шестерня двигателя крутит большое колесо. Измените число зубьев и посмотрите, что станет со скоростью и моментом на выходе.</p>
+    <div class="sand"><div class="fig" style="padding:8px" id="grFig">${gearSvg()}</div><div class="ctrl">
+      <label for="sZ1">Зубьев у шестерни двигателя <output id="oZ1">${G.z1}</output></label><input type="range" id="sZ1" min="8" max="30" step="1" value="${G.z1}">
+      <label for="sZ2">Зубьев у колеса <output id="oZ2">${G.z2}</output></label><input type="range" id="sZ2" min="8" max="60" step="1" value="${G.z2}">
+      <label for="sN1">Скорость двигателя <output id="oN1">${G.n1} об/мин</output></label><input type="range" id="sN1" min="10" max="120" step="10" value="${G.n1}">
+      <div id="grMet">${gearMet()}</div>
+    </div></div>
+    <p class="src">Формулы: i = z₂ / z₁, n₂ = n₁ / i, M₂ ≈ M₁ · i.</p></div>`;
+  return sand + quiz("mech","Выбери механизм под задачу","Задача определяет кинематическую схему.","Вы знаете звено, механизм и машину и умеете подбирать пару под движение.");
+}
+
+/* ---------- станция 6 ---------- */
+function kinSvg(){
+  const K=S.kn; const hx=150, hy=60;
+  const ang=(K.anim?K.anim.cur:K.ph);
+  return `<svg viewBox="0 0 320 210" role="img" aria-label="CubeSat с раскрывающейся панелью">
+    <rect x="40" y="60" width="110" height="130" fill="var(--surface)" stroke="var(--ink)" stroke-width="3" rx="3"/>
+    <line x1="40" y1="103" x2="150" y2="103" stroke="var(--line)"/><line x1="40" y1="146" x2="150" y2="146" stroke="var(--line)"/>
+    <path d="M${hx},${hy+125} A125,125 0 0,0 ${(hx+125*Math.sin(K.ph*Math.PI/180)).toFixed(1)},${(hy+125*Math.cos(K.ph*Math.PI/180)).toFixed(1)}" fill="none" stroke="var(--accent)" stroke-dasharray="4 4"/>
+    <g id="knPanel" transform="rotate(${(-ang).toFixed(1)} ${hx} ${hy})"><rect x="${hx+2}" y="${hy}" width="8" height="125" fill="var(--frame)"/>${[0,1,2].map(i=>`<rect x="${hx+3}" y="${hy+4+i*41}" width="6" height="37" fill="var(--water)"/>`).join("")}</g>
+    <circle cx="${hx+6}" cy="${hy}" r="5" fill="var(--ink)"/>
+    <text x="${hx+14}" y="${hy-8}" fill="var(--muted)" font-size="11">шарнир</text>
+    <text x="300" y="200" text-anchor="end" fill="var(--accentInk)" font-family="IBM Plex Mono,monospace" font-size="13" id="knNow">φ = ${Math.round(ang)}°${K.anim?` · t = ${nf(K.anim.el,1)} с`:""}</text>
+  </svg>`;
+}
+function leverSvg(){
+  const K=S.kn; const L=40+K.l*1600, Fh=10+K.F*14;
+  return `<svg viewBox="0 0 320 150" role="img" aria-label="Сила и плечо">
+    <circle cx="40" cy="100" r="7" fill="var(--ink)"/>
+    <rect x="40" y="96" width="${L}" height="8" fill="var(--frame)" rx="3"/>
+    <line x1="${40+L}" y1="${92-Fh}" x2="${40+L}" y2="92" stroke="var(--err)" stroke-width="3"/>
+    <path d="M${34+L},${84} L${40+L},${94} L${46+L},${84} Z" fill="var(--err)"/>
+    <text x="${48+L}" y="${92-Fh/2}" fill="var(--err)" font-family="IBM Plex Mono,monospace" font-size="13">F = ${trim(nf(K.F,1))} Н</text>
+    <line x1="40" y1="122" x2="${40+L}" y2="122" stroke="var(--muted)"/><line x1="40" y1="116" x2="40" y2="128" stroke="var(--muted)"/><line x1="${40+L}" y1="116" x2="${40+L}" y2="128" stroke="var(--muted)"/>
+    <text x="${40+L/2}" y="142" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono,monospace" font-size="12">l = ${trim(nf(K.l,2))} м</text>
+  </svg>`;
+}
+function knMet(){ const K=S.kn, w=K.ph/K.t; return `<div class="meter hi"><span>ω = Δφ / Δt</span><b>${trim(nf(w,1))} °/с</b></div><div class="meter"><span>в радианах</span><b>${nf(w*Math.PI/180,2)} рад/с</b></div>`; }
+function lvMet(){ const K=S.kn; return `<div class="meter hi"><span>M = F · l</span><b>${trim(nf(K.F*K.l,3))} Н·м</b></div>`; }
+function stKin(){
+  const K=S.kn; const w=K.ph/K.t;
+  const sand=`<div class="panel"><p class="eyebrow">Тема 12 · Кинематический и силовой анализ</p><h2>Раскрой панель за заданное время</h2>
+    <p class="lead">Задача: открыть учебную панель CubeSat 3U и остановить её в нужном положении. Кинематика отвечает на вопрос «как движется?», динамика — «какая сила и какой момент нужны?».</p>
+    <div class="sand"><div class="fig" id="knFig">${kinSvg()}</div><div class="ctrl">
+      <label for="sPh">Угол раскрытия Δφ <output id="oPh">${K.ph}°</output></label><input type="range" id="sPh" min="30" max="180" step="15" value="${K.ph}">
+      <label for="sT">Время раскрытия Δt <output id="oT">${K.t} с</output></label><input type="range" id="sT" min="1" max="10" step="1" value="${K.t}">
+      <div class="meters" style="grid-template-columns:1fr 1fr" id="knMet">${knMet()}</div>
+      <div class="row"><button class="next" style="margin:0" data-act="knplay" id="knBtn">${K.anim?"Раскрывается…":"Раскрыть панель"}</button><span class="src" style="margin:0">Движение равномерное, время настоящее.</span></div>
+    </div></div></div>`;
+  const M=K.F*K.l;
+  const lev=`<div class="panel"><h3>Момент силы зависит от плеча</h3>
+    <div class="sand"><div class="fig" id="lvFig">${leverSvg()}</div><div class="ctrl">
+      <label for="sF">Сила F <output id="oF">${trim(nf(K.F,1))} Н</output></label><input type="range" id="sF" min="0.5" max="5" step="0.5" value="${K.F}">
+      <label for="sL">Плечо l <output id="oL">${trim(nf(K.l,2))} м</output></label><input type="range" id="sL" min="0.01" max="0.1" step="0.01" value="${K.l}">
+      <div class="meters" style="grid-template-columns:1fr" id="lvMet">${lvMet()}</div>
+      <p style="margin:0">Та же сила на длинном плече поворачивает сильнее. В невесомости инерция и силы для разгона деталей никуда не исчезают.</p>
+    </div></div>
+    <p class="src">Учебный момент без учёта трения, динамики и запаса надёжности. Реальный механизм рассчитывают со всеми нагрузками и подтверждают испытаниями.</p></div>`;
+  const all=TABS.map(t=>stat(t.id)); const got=all.reduce((s,x)=>s+x.got,0), max=all.reduce((s,x)=>s+x.max,0);
+  const fin=`<div class="panel final"><div><h3>Итог команды</h3><p style="margin:0">Инженерная работа = идея → модель → расчёт → сборка → измерение → вывод.</p></div><div class="result" style="padding:0"><div class="big">★ ${got} из ${max}</div></div></div>`;
+  return sand + lev + quiz("kin","Рассчитай движение и момент","","Скорость, силы и момент проверяют расчётом. Вы справились.") + fin;
+}
+
+/* ---------- отрисовка ---------- */
+function render(){
+  renderTabs();
+  const f={ndvi:stNdvi, pad:stPad, lay:stLay, pw:stPw, mech:stMech, kin:stKin}[cur];
+  $("station").innerHTML=f();
+  EVANIM = (cur==="pad" && !Q.event.done) ? Q.event.qs[Q.event.i].anim : null;
+}
+function upd(id,html){ const el=$(id); if(el) el.innerHTML=html; }
+function softRender(){ // перерисовать, сохранив фокус на ползунке
+  const id=document.activeElement && document.activeElement.id; render();
+  if(id && $(id)) $(id).focus();
+}
+
+document.addEventListener("click",e=>{
+  const tb=e.target.closest("[data-tab]"); if(tb){ cur=tb.dataset.tab; try{history.replaceState(null,"","#"+cur);}catch(_){} render(); window.scrollTo({top:0}); return; }
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const act=b.dataset.act, key=b.dataset.key;
+  if(act==="ans"){ const s=Q[key]; if(s.answered!==null) return; s.answered=+b.dataset.id; if(s.answered===s.qs[s.i].a) s.score++; render(); }
+  else if(act==="next"){ const s=Q[key]; s.answered=null; s.i++; if(s.i>=s.qs.length) s.done=true; render(); }
+  else if(act==="restart"){ const s=Q[key]; Object.assign(s,{qs:s.gen(),i:0,score:0,answered:null,done:false}); render(); }
+  else if(act==="preset"){ const k=b.dataset.k; S.ndviSb = k==="veg"?{red:0.06,nir:0.62}:k==="soil"?{red:0.30,nir:0.36}:{red:0.07,nir:0.02}; render(); }
+  else if(act==="cell"){ const M=S.map; if(M.checked){ M.checked=false; } const i=+b.dataset.i; M.sel.has(i)?M.sel.delete(i):M.sel.add(i); render(); }
+  else if(act==="mapcheck"){ const M=S.map; M.checked=true; M.ok=M.v.every((x,i)=>(x>0.3)===M.sel.has(i)); if(M.ok) S.mapStar=true; render(); }
+  else if(act==="mapnew"){ S.map=genMap(); render(); }
+  else if(act==="mod"){ const L=S.lay; const m=MOD.find(x=>x.id===b.dataset.id); if(L.mi>=3) return;
+    if(m.req && L.sel.has(m.id)){ L.msg={ok:false,h:"Эту систему убрать нельзя",t:`${m.t} нужен любому спутнику, какой бы ни была полезная нагрузка.`}; render(); return; }
+    L.sel.has(m.id)?L.sel.delete(m.id):L.sel.add(m.id); L.msg=null; render(); }
+  else if(act==="laycheck"){ const L=S.lay, mi=MISSIONS[L.mi]; const sel=MOD.filter(m=>L.sel.has(m.id));
+    const U=sel.reduce((s,m)=>s+m.u,0), Mm=sel.reduce((s,m)=>s+m.m,0)+FRAME_M; const pr=[];
+    mi.need.forEach(n=>{ if(!L.sel.has(n)) pr.push(`Для миссии нужна нагрузка «${MOD.find(m=>m.id===n).t}».`); });
+    if(U>3) pr.push(`Объём ${trim(nf(U,2))}U больше 3U: деталь должна поместиться. Уберите лишнее.`);
+    if(Mm>4000) pr.push(`Масса ${trim(nf(Mm/1000,2))} кг больше бюджета 4 кг.`);
+    const extra=sel.filter(m=>!m.req && !mi.need.includes(m.id) && m.id!=="bat2");
+    if(!pr.length){ L.stars[L.mi]=true; const note = extra.length?` Лишние приборы (${extra.map(m=>m.t).join(", ")}) влезли, но тратят энергию и массу.`:"";
+      L.msg={ok:true,h:`Миссия ${L.mi+1} собрана: ${trim(nf(U,2))}U, ${trim(nf(Mm/1000,2))} кг`,t:"Объём и масса в бюджете, служебные системы на месте."+note};
+      L.mi++; L.sel=new Set(["obc","eps","com","adcs"]); }
+    else L.msg={ok:false,h:"Компоновка не проходит проверку",list:pr};
+    render(); }
+  else if(act==="layreset"){ S.lay={mi:0, sel:new Set(["obc","eps","com","adcs"]), msg:null, stars:S.lay.stars}; render(); }
+  else if(act==="node"){ const E=S.err; if(E.checked) return; const n=+b.dataset.n; E.sel.has(n)?E.sel.delete(n):E.sel.add(n); render(); }
+  else if(act==="errcheck"){ const E=S.err; E.checked=true; E.ok=NODES.every(N=>N.bad===E.sel.has(N.n)); if(E.ok) E.star=true; render(); }
+  else if(act==="errreset"){ S.err={sel:new Set(),checked:false,star:S.err.star}; render(); }
+  else if(act==="shade"){ S.pw.shade=b.dataset.v==="1"; render(); }
+  else if(act==="pwlog"){ const P=S.pw; const r=panelModel(P.d,P.a,P.shade); if(P.log.length>=8) P.log.shift();
+    P.log.push({c:`${P.d} см, ${P.a}°${P.shade?", частичная тень":""}`,U:r.U,I:r.I,P:r.P}); render(); }
+  else if(act==="pwclear"){ S.pw.log=[]; render(); }
+  else if(act==="knplay"){ const K=S.kn; if(K.anim) return; K.anim={start:performance.now(),cur:0,el:0}; upd("knFig",kinSvg()); b.textContent="Раскрывается…"; }
+});
+document.addEventListener("keydown",e=>{
+  const g=e.target.closest && e.target.closest("g[data-act]"); if(g && (e.key==="Enter"||e.key===" ")){ e.preventDefault(); g.dispatchEvent(new MouseEvent("click",{bubbles:true})); }
+});
+document.addEventListener("input",e=>{
+  const id=e.target.id, v=+e.target.value;
+  if(id==="sRed"||id==="sNir"){ S.ndviSb[id==="sRed"?"red":"nir"]=v; const r=ndviReadout();
+    $("oRed").textContent=nf(S.ndviSb.red,2); $("oNir").textContent=nf(S.ndviSb.nir,2); $("oNdvi").textContent=sg(r.v); $("oTxt").textContent=r.txt; $("pin").style.left=((r.v+1)/2*100).toFixed(1)+"%"; }
+  else if(id==="sD"||id==="sA"){ S.pw[id==="sD"?"d":"a"]=v; $("oD").textContent=S.pw.d+" см"; $("oA").textContent=S.pw.a+"°"; upd("pwFig",pwSvg()); upd("pwMet",pwMet()); }
+  else if(id==="sZ1"||id==="sZ2"||id==="sN1"){ S.gr[{sZ1:"z1",sZ2:"z2",sN1:"n1"}[id]]=v; $("oZ1").textContent=S.gr.z1; $("oZ2").textContent=S.gr.z2; $("oN1").textContent=S.gr.n1+" об/мин"; upd("grFig",gearSvg()); upd("grMet",gearMet()); }
+  else if(id==="sPh"||id==="sT"){ S.kn[id==="sPh"?"ph":"t"]=v; S.kn.anim=null; $("oPh").textContent=S.kn.ph+"°"; $("oT").textContent=S.kn.t+" с"; upd("knFig",kinSvg()); upd("knMet",knMet()); if($("knBtn")) $("knBtn").textContent="Раскрыть панель"; }
+  else if(id==="sF"||id==="sL"){ S.kn[id==="sF"?"F":"l"]=v; $("oF").textContent=trim(nf(S.kn.F,1))+" Н"; $("oL").textContent=trim(nf(S.kn.l,2))+" м"; upd("lvFig",leverSvg()); upd("lvMet",lvMet()); }
+});
+
+/* ---------- анимация: шестерни, раскрытие панели, кольца частиц ---------- */
+let gAng=0, last=performance.now(), evT=0;
+function tick(now){
+  const dt=Math.min(0.1,(now-last)/1000); last=now;
+  const g1=$("g1"), g2=$("g2");
+  if(g1&&g2&&!RM){ const G=S.gr; const vis=Math.min(G.n1,60)/60; gAng+=dt*vis*2*Math.PI*0.5;
+    g1.setAttribute("transform",`rotate(${(gAng*180/Math.PI).toFixed(2)})`);
+    g2.setAttribute("transform",`rotate(${(-gAng*G.z1/G.z2*180/Math.PI + 180/G.z2).toFixed(2)})`); }
+  const K=S.kn;
+  if(K.anim){ const el=(now-K.anim.start)/1000; K.anim.el=Math.min(el,K.t); K.anim.cur=K.ph*K.anim.el/K.t;
+    const p=$("knPanel"), t=$("knNow");
+    if(p){ p.setAttribute("transform",`rotate(${(-K.anim.cur).toFixed(1)} 150 60)`); t.textContent=`φ = ${Math.round(K.anim.cur)}° · t = ${nf(K.anim.el,1)} с`; }
+    if(el>=K.t){ K.anim=null; if($("knBtn")) $("knBtn").textContent="Раскрыть панель"; }
+  }
+  if(EVANIM){ const a=$("evA"), b=$("evB");
+    if(a&&b){ evT=(evT+dt*(RM?0:2.2))%10; const k=Math.min(8,evT); const i0=Math.floor(k), i1=Math.min(8,i0+1), f=k-i0;
+      const L=(p,q)=>[p[0]+(q[0]-p[0])*f,p[1]+(q[1]-p[1])*f];
+      const A=L(EVANIM.pts[i0].A,EVANIM.pts[i1].A), B=L(EVANIM.pts[i0].B,EVANIM.pts[i1].B);
+      a.setAttribute("cx",A[0].toFixed(1)); a.setAttribute("cy",A[1].toFixed(1)); b.setAttribute("cx",B[0].toFixed(1)); b.setAttribute("cy",B[1].toFixed(1)); } }
+  requestAnimationFrame(tick);
+}
+render(); requestAnimationFrame(tick);
+})();
+</script>
