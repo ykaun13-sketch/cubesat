@@ -1,0 +1,336 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Метод характеристик по шагам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: чертёж сопла слева (сверху на телефоне), справа — карточка текущего шага; внизу пульт шагов */
+:root{
+  --paper:#F5F6F3; --sheet:#FFFFFF; --ink:#14213D; --muted:#5A6577; --rule:#D9DCD4;
+  --cm:#2F6DB5; --cp:#B8471F; --wall:#14213D; --hl:#E8A33D; --soft:#EEF1F6; --ok:#2E7D4F;
+  --cm-soft:#DCE7F5; --cp-soft:#F5E1D8;
+  --sans:"IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0E1420; --sheet:#151D2C; --ink:#E6EBF3; --muted:#9AA6B8; --rule:#2A3446;
+  --cm:#6FA4E8; --cp:#F08A5D; --wall:#E6EBF3; --hl:#F2B65A; --soft:#1B2536; --ok:#5FC08A;
+  --cm-soft:#1C2E48; --cp-soft:#3A2419; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0E1420; --sheet:#151D2C; --ink:#E6EBF3; --muted:#9AA6B8; --rule:#2A3446;
+  --cm:#6FA4E8; --cp:#F08A5D; --wall:#E6EBF3; --hl:#F2B65A; --soft:#1B2536; --ok:#5FC08A;
+  --cm-soft:#1C2E48; --cp-soft:#3A2419; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 24px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cp)}
+h1{font-size:clamp(24px,3.4vw,36px);font-weight:600;line-height:1.1;margin:4px 0 0;text-wrap:balance}
+.sub{color:var(--muted);margin:6px 0 0;max-width:70ch}
+.params{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end}
+.params label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.params output{font-family:var(--mono);color:var(--ink);font-size:15px}
+.params input[type=range]{width:140px;accent-color:var(--cm)}
+select{font:inherit;font-family:var(--mono);padding:6px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--sheet);color:var(--ink)}
+.ghost{font:inherit;font-size:13px;border:1px solid var(--rule);background:var(--sheet);color:var(--muted);border-radius:999px;padding:6px 12px;cursor:pointer}
+.main{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.main{grid-template-columns:1fr}}
+.fig{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:10px;min-width:0}
+.fig svg{display:block;width:100%;height:auto;touch-action:pan-y}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted);padding:6px 6px 0}
+.legend i{display:inline-block;width:22px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:18px 20px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.stepno{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.card h2{font-size:22px;font-weight:600;margin:0;line-height:1.2;text-wrap:balance}
+.card h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:4px 0 0;font-weight:600}
+.card p{margin:0}
+.src{display:flex;flex-direction:column;gap:8px}
+.src div{border-radius:8px;padding:10px 12px;font-size:15px}
+.src .m{background:var(--cm-soft);border-left:4px solid var(--cm)}
+.src .p{background:var(--cp-soft);border-left:4px solid var(--cp)}
+.src .w{background:var(--soft);border-left:4px solid var(--wall)}
+.calc{font-family:var(--mono);font-size:14px;background:var(--soft);border-radius:8px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-variant-numeric:tabular-nums;overflow-x:auto}
+.calc span:nth-child(odd){color:var(--muted)}
+.why{font-size:15px;color:var(--ink)}
+.ok{color:var(--ok);font-weight:600}
+.pult{position:sticky;bottom:0;z-index:5;background:var(--paper);padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px solid var(--rule)}
+.pult button{font:inherit;font-weight:600;min-height:44px;min-width:44px;padding:8px 14px;border-radius:8px;border:1px solid var(--rule);background:var(--sheet);color:var(--ink);cursor:pointer}
+.pult button.primary{background:var(--ink);color:var(--paper);border-color:var(--ink);min-width:140px}
+.pult button:disabled{opacity:.4;cursor:default}
+.pult .prog{flex:1;min-width:160px;display:flex;flex-direction:column;gap:4px}
+.pult .bar{height:6px;background:var(--rule);border-radius:3px;overflow:hidden}
+.pult .bar i{display:block;height:100%;background:var(--hl);width:0;transition:width .2s}
+.pult .lbl{font-family:var(--mono);font-size:12px;color:var(--muted)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--hl);outline-offset:2px}
+details{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:10px 14px}
+summary{cursor:pointer;font-weight:600}
+.tbl{overflow-x:auto;margin-top:10px}
+table{border-collapse:collapse;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;width:100%}
+th,td{padding:4px 10px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap}
+th{color:var(--muted);font-weight:600}
+td:first-child,th:first-child{text-align:left}
+tr.cur td{background:var(--soft);font-weight:600}
+tr.fut td{color:var(--muted);opacity:.45}
+.note{font-size:13px;color:var(--muted)}
+@media (max-width:600px){.pult .prog{flex-basis:100%;order:-1}.pult button.primary{flex:1}}
+@media (prefers-reduced-motion:reduce){.pult .bar i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Плоское сопло минимальной длины · метод характеристик</div>
+      <h1>Метод характеристик по шагам</h1>
+      <p class="sub">Каждое нажатие «Шаг» строит одну точку: узел сетки или точку стенки. Справа написано, какие характеристики в неё приходят, откуда, что они несут и почему точка строится именно так.</p>
+    </div>
+    <div class="params">
+      <label for="inM">Mₐ <output id="oM">2,4</output><input type="range" id="inM" min="1.5" max="4" step="0.1" value="2.4"></label>
+      <label for="inG">γ <select id="inG"><option>1.20</option><option>1.25</option><option>1.30</option><option selected>1.40</option></select></label>
+      <label for="inN">число характеристик n <output id="oN">5</output><input type="range" id="inN" min="2" max="30" step="1" value="5"></label>
+      <label style="flex-direction:row;align-items:center;gap:8px;color:var(--ink)"><input type="checkbox" id="full"> весь контур</label>
+      <button class="ghost" id="theme" type="button">тёмная тема</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="fig">
+      <svg id="svg" role="img" aria-label="Сетка характеристик и контур сопла"></svg>
+      <div class="legend">
+        <span><i style="background:var(--cm)"></i>C⁻: dy/dx = tg(θ − μ)</span>
+        <span><i style="background:var(--cp)"></i>C⁺: dy/dx = tg(θ + μ)</span>
+        <span><i style="background:var(--wall)"></i>стенка сопла</span>
+        <span><i style="background:var(--hl)"></i>текущий шаг</span>
+      </div>
+    </div>
+    <section class="card" id="card" aria-live="polite"></section>
+  </div>
+
+  <details id="det">
+    <summary>Таблица узлов и точек стенки</summary>
+    <div class="tbl"><table id="tbl"></table></div>
+    <p class="note">Координаты в долях y* (полувысота критического сечения). Углы в градусах. Серым — ещё не построенные точки.</p>
+  </details>
+
+  <div class="pult">
+    <button id="bFirst" type="button" aria-label="В начало">⏮</button>
+    <button id="bPrev" type="button" aria-label="Шаг назад">◀</button>
+    <button id="bNext" type="button" class="primary">Шаг ▶</button>
+    <button id="bAuto" type="button">Авто</button>
+    <button id="bLast" type="button" aria-label="Построить всё">⏭</button>
+    <div class="prog"><div class="bar"><i id="barI"></i></div><div class="lbl" id="lbl"></div></div>
+  </div>
+  <p class="note">Управление: «Шаг», стрелки ← →, пробел; на телефоне — свайп по чертежу. Модель: плоское безвихревое изоэнтропическое течение, отрезки характеристик заменяются прямыми со средним наклоном, θᵢ веера в угловой точке распределены равномерно от θmax/n до θmax.</p>
+</div>
+
+<script>
+function nuOf(M,g){const a=Math.sqrt((g+1)/(g-1));return a*Math.atan(Math.sqrt((M*M-1)/(a*a)))-Math.atan(Math.sqrt(M*M-1));}
+function MofNu(nu,g){if(nu<=1e-12)return 1;let lo=1,hi=60;for(let i=0;i<80;i++){const m=(lo+hi)/2;if(nuOf(m,g)<nu)lo=m;else hi=m;}return (lo+hi)/2;}
+function areaRatio(M,g){return (1/M)*Math.pow(2/(g+1)*(1+(g-1)/2*M*M),(g+1)/(2*(g-1)));}
+function build(Ma,g,n){
+  const nuA=nuOf(Ma,g), thMax=nuA/2;
+  const pt=(th,nu,x,y,extra)=>{const M=MofNu(nu,g),mu=Math.asin(1/M);return Object.assign({th,nu,M,mu,x,y},extra);};
+  const corner=[];for(let m=1;m<=n;m++){const th=thMax*m/n;corner[m]=pt(th,th,0,1,{Km:2*th});}
+  const N={};const W=[pt(thMax,thMax,0,1,{})];const steps=[];
+  const inter=(xA,yA,aA,xB,yB,aB)=>{const k1=Math.tan(aA),k2=Math.tan(aB);const x=(yB-yA+k1*xA-k2*xB)/(k1-k2);return [x,yA+k1*(x-xA)];};
+  for(let k=1;k<=n;k++){for(let m=k;m<=n;m++){
+    const A=(k===1)?corner[m]:N[(k-1)+','+m];
+    const Km=(k===1)?corner[m].Km:A.th+A.nu;
+    let P;
+    if(m===k){const th=0,nu=Km;const tmp=pt(th,nu,0,0);const am=((A.th-A.mu)+(tmp.th-tmp.mu))/2;const x=A.x-A.y/Math.tan(am);
+      P=pt(th,nu,x,0,{type:'axis',k,m,Km,Kp:-Km,A:k===1?{corner:m}:{node:[k-1,m]},am});}
+    else{const B=N[k+','+(m-1)];const Kp=B.th-B.nu;const th=(Km+Kp)/2,nu=(Km-Kp)/2;const tmp=pt(th,nu,0,0);
+      const am=((A.th-A.mu)+(tmp.th-tmp.mu))/2, ap=((B.th+B.mu)+(tmp.th+tmp.mu))/2;const [x,y]=inter(A.x,A.y,am,B.x,B.y,ap);
+      P=pt(th,nu,x,y,{type:'int',k,m,Km,Kp,A:k===1?{corner:m}:{node:[k-1,m]},B:{node:[k,m-1]},am,ap});}
+    N[k+','+m]=P;steps.push({kind:'node',P});
+  }
+  const S=N[k+','+n],Wp=W[k-1];const aw=(Wp.th+S.th)/2;const [x,y]=inter(S.x,S.y,S.th+S.mu,Wp.x,Wp.y,aw);
+  const Wk=pt(S.th,S.nu,x,y,{type:'wall',k,from:[k,n],aw});W.push(Wk);steps.push({kind:'wall',P:Wk});}
+  return {nuA,thMax,corner,N,W,steps,L:W[n].x,ya:W[n].y,AR:areaRatio(Ma,g)};
+}
+
+(function(){
+const $=id=>document.getElementById(id);
+const D=180/Math.PI, f=(x,d=2)=>(Math.abs(x)<5e-13?0:x).toFixed(d).replace('-','−').replace('.',',');
+const deg=(x,d=2)=>f(x*D,d)+'°';
+let R,steps,cur=0,timer=null,Ma=2.4,g=1.4,n=5;
+
+function recompute(keep){
+  Ma=+$('inM').value; g=+$('inG').value; n=+$('inN').value;
+  $('oM').textContent=f(Ma,1); $('oN').textContent=n;
+  R=build(Ma,g,n);
+  steps=[{kind:'start'},{kind:'fan'}].concat(R.steps,[{kind:'check'}]);
+  cur=keep?Math.min(cur,steps.length-1):0; render();
+}
+
+/* ---------- геометрия чертежа ---------- */
+let S,ox,oy,VW,VH;
+function frame(){
+  let xr=R.L, yr=R.ya;
+  if(!$('full').checked){ xr=2.2; yr=1.25;
+    for(let i=2;i<=cur && i<steps.length;i++){const P=steps[i].P; if(P){xr=Math.max(xr,P.x); yr=Math.max(yr,P.y);} }
+    if(cur>=steps.length-1){xr=R.L; yr=R.ya;} }
+  const xmin=-1.1, xmax=xr*1.06+0.2, ymax=yr*1.12;
+  VW=1000; const pl=34,pr=14,pt=16,pb=34;
+  S=(VW-pl-pr)/(xmax-xmin);
+  if(ymax*S>560) S=560/ymax;
+  VH=Math.round(ymax*S+pt+pb);
+  ox=x=>pl+(x-xmin)*S; oy=y=>VH-pb-y*S;
+}
+const P2=(p)=>[ox(p.x),oy(p.y)];
+function seg(a,b,cls,extra=''){const[x1,y1]=P2(a),[x2,y2]=P2(b);return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" ${cls} ${extra}/>`;}
+const nodeOf=(ref)=>ref.corner?R.corner[ref.corner]:R.N[ref.node[0]+','+ref.node[1]];
+const nameOf=(ref)=>ref.corner?`угловой точки a (луч веера №${ref.corner})`:`узла (${ref.node[0]}, ${ref.node[1]})`;
+
+function draw(){
+  frame();
+  const st=steps[cur], done=new Set();
+  for(let i=2;i<=cur && i<steps.length;i++){ if(steps[i].P) done.add(steps[i].P); }
+  const sw=Math.max(1.2,Math.min(2.6,14/Math.sqrt(n)));
+  const showLab=n<=6;
+  const C=`stroke="var(--cm)" stroke-width="${sw}"`, Cp=`stroke="var(--cp)" stroke-width="${sw}"`;
+  let g1='',g2='',g3='',hl='';
+  const a={x:0,y:1};
+  // ось и критическое сечение
+  g1+=`<line x1="${ox(-1.1)}" y1="${oy(0)}" x2="${VW}" y2="${oy(0)}" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="10 6"/>`;
+  g1+=`<line x1="${ox(0)}" y1="${oy(0)}" x2="${ox(0)}" y2="${oy(1)}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 4"/>`;
+  g1+=`<path d="M${ox(-1.1)},${oy(1.55)} C${ox(-0.6)},${oy(1.55)} ${ox(-0.35)},${oy(1)} ${ox(0)},${oy(1)}" fill="none" stroke="var(--wall)" stroke-width="2.4" opacity=".55"/>`;
+  g1+=`<text x="${ox(-1.05)}" y="${oy(0)-8}" font-size="13" fill="var(--muted)" font-family="var(--mono)">ось, θ = 0</text>`;
+  g1+=`<text x="${ox(0)+6}" y="${oy(0.5)}" font-size="13" fill="var(--muted)" font-family="var(--mono)">y* = 1</text>`;
+  // веер: пунктир до построения
+  if(cur>=1){
+    for(let m=1;m<=n;m++){
+      const c=R.corner[m], t=R.N['1,'+m];
+      const dash=done.has(t)?'':`stroke-dasharray="5 5" opacity=".45"`;
+      if(done.has(t)) g2+=seg(a,t,C); else{
+        const L=1.4; g2+=seg(a,{x:a.x+L*Math.cos(c.th-c.mu),y:a.y+L*Math.sin(c.th-c.mu)},C,dash);}
+    }
+  }
+  // построенные отрезки
+  for(const P of done){
+    if(P.type==='int'||P.type==='axis'){
+      if(P.A.node) g2+=seg(nodeOf(P.A),P,C);
+      if(P.B) g2+=seg(nodeOf(P.B),P,Cp);
+    }
+    if(P.type==='wall'){ g2+=seg(R.N[P.from[0]+','+P.from[1]],P,Cp); }
+  }
+  // стенка
+  const wpts=[R.W[0]].concat(R.W.slice(1).filter(w=>done.has(w)));
+  g3+=`<polyline points="${wpts.map(w=>P2(w).map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="var(--wall)" stroke-width="3.2" stroke-linejoin="round"/>`;
+  // узлы
+  for(const P of done){
+    const [x,y]=P2(P); const axis=P.type==='axis', wall=P.type==='wall';
+    g3+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${showLab?5:3}" fill="${axis?'var(--sheet)':'var(--wall)'}" stroke="var(--wall)" stroke-width="1.6"/>`;
+    if(showLab){ const t=wall?`W${P.k}`:`(${P.k},${P.m})`; g3+=`<text x="${(x+7).toFixed(1)}" y="${(wall?y-8:axis?y+18:y-8).toFixed(1)}" font-size="12" fill="var(--muted)" font-family="var(--mono)">${t}</text>`; }
+  }
+  g3+=`<circle cx="${ox(0)}" cy="${oy(1)}" r="5.5" fill="var(--wall)"/><text x="${ox(0)-6}" y="${oy(1)-10}" font-size="13" text-anchor="end" fill="var(--ink)" font-family="var(--mono)">a</text>`;
+  // подсветка текущего шага
+  const H=`stroke="var(--hl)" stroke-width="${sw+3.5}" stroke-linecap="round" opacity=".85"`;
+  if(st.P){
+    const P=st.P;
+    if(P.type==='int'||P.type==='axis'){
+      const A=nodeOf(P.A); hl+=seg(A,P,H)+seg(A,P,C);
+      hl+=lab(A,'A','var(--cm)');
+      if(P.B){const B=nodeOf(P.B); hl+=seg(B,P,H)+seg(B,P,Cp)+lab(B,'B','var(--cp)');}
+    } else {
+      const Sn=R.N[P.from[0]+','+P.from[1]], Wp=R.W[P.k-1];
+      hl+=seg(Sn,P,H)+seg(Sn,P,Cp)+seg(Wp,P,H)+seg(Wp,P,`stroke="var(--wall)" stroke-width="3.2"`);
+      hl+=lab(Sn,'S','var(--cp)')+lab(Wp,'W'+(P.k-1),'var(--ink)');
+    }
+    const[x,y]=P2(P); hl+=`<circle cx="${x}" cy="${y}" r="11" fill="none" stroke="var(--hl)" stroke-width="3"><animate attributeName="r" values="9;14;9" dur="1.4s" repeatCount="indefinite"/></circle>`;
+    hl+=`<circle cx="${x}" cy="${y}" r="5.5" fill="var(--hl)" stroke="var(--wall)" stroke-width="1.5"/>`;
+  }
+  if(st.kind==='fan'){ for(let m=1;m<=n;m++){const c=R.corner[m];const L=1.4;hl+=seg(a,{x:L*Math.cos(c.th-c.mu),y:1+L*Math.sin(c.th-c.mu)},H);} }
+  $('svg').setAttribute('viewBox',`0 0 ${VW} ${VH}`);
+  $('svg').innerHTML=vfix(g1+hl+g2+g3);
+}
+function vfix(s){return s.replace(/<[^>]+>/g,t=>{const st=[];t=t.replace(/\s(stroke|fill|font-family)="(var\([^)]*\))"/g,(m,a,v)=>{st.push(a+':'+v);return '';});return st.length?t.replace(/^<(\w+)/,`<$1 style="${st.join(';')}"`):t;});}
+function lab(p,t,c){const[x,y]=P2(p);return `<text x="${x-8}" y="${y-10}" text-anchor="end" font-size="15" font-weight="600" fill="${c}" font-family="var(--mono)">${t}</text>`;}
+
+/* ---------- текст шага ---------- */
+function card(){
+  const st=steps[cur]; let h='';
+  const head=(t)=>`<div class="stepno">Шаг ${cur+1} из ${steps.length}</div><h2>${t}</h2>`;
+  const calc=(rows)=>`<div class="calc">${rows.map(r=>`<span>${r[0]}</span><span>${r[1]}</span>`).join('')}</div>`;
+  if(st.kind==='start'){
+    h=head('Исходные данные и угол разворота стенки')+
+    `<p class="why">Задано: Mₐ = ${f(Ma,1)}, γ = ${f(g,2)}, y* = 1, n = ${n}. Строим плоское сопло минимальной длины: сразу за критическим сечением стенка резко поворачивает в угловой точке <b>a</b>, и весь разгон до Mₐ делают волны разрежения.</p>`+
+    calc([['ν(Mₐ)',deg(R.nuA)],['θw,max = ν(Mₐ)/2',deg(R.thMax)],['Fₐ/F* (теория)',f(R.AR,4)]])+
+    `<h3>Почему половина ν(Mₐ)</h3><p class="why">Поток должен развернуться в волнах на полный угол ν(Mₐ). Половину разворота даёт веер разрежения у угловой точки; вторая половина получается, когда эти волны отражаются от оси и гасятся стенкой. На срезе θ = 0 и ν = ν(Mₐ), то есть M = Mₐ и поток равномерный.</p>`;
+  } else if(st.kind==='fan'){
+    const rows=[];for(let m=1;m<=Math.min(n,8);m++){const c=R.corner[m];rows.push([`C⁻ №${m}`,`θ = ν = ${deg(c.th)},  K⁻ = 2θ = ${deg(c.Km)}`]);}
+    if(n>8)rows.push(['…',`всего ${n} лучей`]);
+    h=head('Веер разрежения из угловой точки a')+
+    `<div class="src"><div class="m">Из точки <b>a</b> выходят ${n} характеристик C⁻. Угол потока на них растёт от θmax/n = ${deg(R.thMax/n)} до θmax = ${deg(R.thMax)}.</div></div>`+
+    calc(rows)+
+    `<h3>Почему так</h3><p class="why">До веера поток звуковой (M = 1, ν = 0, θ = 0). В центрированной волне разрежения вдоль каждой C⁻ сохраняется <b>K⁻ = θ + ν</b>, а через веер вдоль C⁺ сохраняется K⁺ = θ − ν = 0. Значит, на каждом луче <b>ν = θ</b> и K⁻ = 2θ. Лучи идут под углом θ − μ к оси, поэтому направлены вниз, к оси. Пунктир — направления лучей; сами отрезки появятся, когда построим узлы.</p>`;
+  } else if(st.kind==='check'){
+    const d=(R.AR-R.ya)/R.AR*100;
+    h=head('Проверка: выходная высота против изоэнтропики')+
+    calc([['L/y* (длина)',f(R.L,3)],['yₐ/y* (метод)',f(R.ya,4)],['Fₐ/F* (теория)',f(R.AR,4)],['погрешность δ',f(d,2)+' %'],['θ на срезе',deg(R.W[n].th)],['M на срезе',f(R.W[n].M,3)]])+
+    `<p class="why">Для плоского сопла yₐ/y* = Fₐ/F*. Совпадение подтверждает, что наклоны и точки стенки посчитаны верно. ${d<0.5?'<span class="ok">Погрешность меньше 0,5 % — критерий приёмки выполнен.</span>':'Увеличьте n: погрешность падает быстрее, чем 1/n (критерий приёмки — меньше 0,5 % при n = 30).'}</p>`;
+  } else {
+    const P=st.P, M=`M = M(ν) = ${f(P.M,4)}`, mu=`μ = arcsin(1/M) = ${deg(P.mu)}`;
+    if(P.type==='axis'){
+      const A=nodeOf(P.A);
+      h=head(`Узел (${P.k}, ${P.k}) на оси симметрии`)+
+      `<h3>Откуда приходят характеристики</h3><div class="src"><div class="m"><b>C⁻ №${P.m}</b> приходит из ${nameOf(P.A)} и несёт <b>K⁻ = θ + ν = ${deg(P.Km)}</b>.</div><div class="p">Отсюда же выходит отражённая <b>C⁺ №${P.k}</b> с K⁺ = −K⁻ = ${deg(P.Kp)}.</div></div>`+
+      `<h3>Почему так</h3><p class="why">На оси поток параллелен оси: <b>θ = 0</b>. Из одного инварианта сразу ν = K⁻. Ось действует как стенка: падающая C⁻ отражается в C⁺, и K⁺ = θ − ν = −K⁻. Координату находим пересечением C⁻ с прямой y = 0.</p>`+
+      calc([['θ','0° (условие на оси)'],['ν = K⁻',deg(P.nu)],['M',f(P.M,4)],['μ',deg(P.mu)],['α⁻ = ½[(θ−μ)A + (θ−μ)P]',deg(P.am)],['x = xA − yA / tg α⁻',f(P.x,4)],['y','0']]);
+    } else if(P.type==='int'){
+      h=head(`Внутренний узел (${P.k}, ${P.m})`)+
+      `<h3>Откуда приходят характеристики</h3><div class="src"><div class="m"><b>C⁻ №${P.m}</b> приходит из ${nameOf(P.A)} (точка A) и несёт <b>K⁻ = ${deg(P.Km)}</b>.</div><div class="p"><b>C⁺ №${P.k}</b> приходит из узла (${P.B.node[0]}, ${P.B.node[1]}) (точка B) и несёт <b>K⁺ = ${deg(P.Kp)}</b>.</div></div>`+
+      `<h3>Почему так</h3><p class="why">В узле пересекаются две характеристики разных семейств, и оба инварианта известны. Значит, θ и ν находятся алгебраически, без интегрирования. Порядок обхода (k по строкам, m от k до n) гарантирует, что A и B уже построены. Координаты — пересечение двух прямых со средними наклонами по концам отрезков.</p>`+
+      calc([['θ = (K⁻ + K⁺)/2',deg(P.th)],['ν = (K⁻ − K⁺)/2',deg(P.nu)],['M = M(ν)',f(P.M,4)],['μ = arcsin(1/M)',deg(P.mu)],['α⁻ = ½[(θ−μ)A + (θ−μ)P]',deg(P.am)],['α⁺ = ½[(θ+μ)B + (θ+μ)P]',deg(P.ap)],['x, y',`${f(P.x,4)}; ${f(P.y,4)}`]]);
+    } else {
+      const last=P.k===n;
+      h=head(`Точка стенки W${P.k}`)+
+      `<h3>Откуда приходят характеристики</h3><div class="src"><div class="p"><b>C⁺ №${P.k}</b> выходит из узла (${P.from[0]}, ${P.from[1]}) — последнего на этой линии (точка S) — под углом θ + μ = ${deg(P.th+P.mu)}.</div><div class="w">Стенка продолжается из точки W${P.k-1} под углом ½(θw,${P.k-1} + θw,${P.k}) = ${deg(P.aw)}.</div></div>`+
+      `<h3>Почему так</h3><p class="why">Стенка — линия тока, которую подбирают так, чтобы падающая C⁺ <b>не отражалась</b>. Поэтому в точке стенки те же θ, ν и M, что в узле (${P.k}, ${n}), а стенка поворачивается на угол θ этой волны и гасит её. ${last?'<b>Это последняя C⁺:</b> θ = 0, стенка становится горизонтальной, и на срезе M = Mₐ.':'Каждая следующая C⁺ несёт меньший θ, поэтому стенка постепенно выпрямляется.'}</p>`+
+      calc([['θw = θ(S)',deg(P.th)],['ν',deg(P.nu)],['M',f(P.M,4)],['x, y',`${f(P.x,4)}; ${f(P.y,4)}`]]);
+    }
+  }
+  $('card').innerHTML=h;
+}
+
+function table(){
+  const rows=[`<tr><th>точка</th><th>K⁻</th><th>K⁺</th><th>θ</th><th>ν</th><th>M</th><th>μ</th><th>x</th><th>y</th></tr>`];
+  const st=steps[cur]; let i=0;
+  for(const s of steps){ if(s.P){const P=s.P; const nm=P.type==='wall'?`W${P.k}`:`(${P.k},${P.m})`+(P.type==='axis'?' ось':'');
+    const cls=s===st?'cur':(steps.indexOf(s)>cur?'fut':'');
+    rows.push(`<tr class="${cls}"><td>${nm}</td><td>${P.Km!=null?deg(P.Km,2):'—'}</td><td>${P.Kp!=null?deg(P.Kp,2):'—'}</td><td>${deg(P.th)}</td><td>${deg(P.nu)}</td><td>${f(P.M,3)}</td><td>${deg(P.mu)}</td><td>${f(P.x,3)}</td><td>${f(P.y,3)}</td></tr>`);} }
+  $('tbl').innerHTML=rows.join('');
+}
+
+function render(){
+  draw(); card(); if($('det').open) table();
+  $('bPrev').disabled=$('bFirst').disabled=cur===0;
+  $('bNext').disabled=$('bLast').disabled=cur===steps.length-1;
+  $('barI').style.width=(cur/(steps.length-1)*100)+'%';
+  $('lbl').textContent=`шаг ${cur+1} из ${steps.length}`;
+}
+const go=d=>{cur=Math.max(0,Math.min(steps.length-1,cur+d));render();};
+function stopAuto(){clearInterval(timer);timer=null;$('bAuto').textContent='Авто';}
+$('bNext').onclick=()=>{stopAuto();go(1)}; $('bPrev').onclick=()=>{stopAuto();go(-1)};
+$('bFirst').onclick=()=>{stopAuto();cur=0;render()}; $('bLast').onclick=()=>{stopAuto();cur=steps.length-1;render()};
+$('bAuto').onclick=()=>{ if(timer){stopAuto();return;} if(cur===steps.length-1)cur=0;
+  $('bAuto').textContent='Пауза'; render(); timer=setInterval(()=>{ if(cur>=steps.length-1){stopAuto();return;} go(1); }, n>12?600:1600); };
+$('full').addEventListener('change',render);
+$('det').addEventListener('toggle',()=>{if($('det').open)table();});
+['inM','inN'].forEach(id=>$(id).addEventListener('input',()=>{stopAuto();recompute(false)}));
+$('inG').addEventListener('change',()=>{stopAuto();recompute(false)});
+document.addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();stopAuto();go(1)} else if(e.key==='ArrowLeft'){stopAuto();go(-1)} });
+let tx=null; const sv=$('svg');
+sv.addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+sv.addEventListener('touchend',e=>{ if(tx==null)return; const dx=e.changedTouches[0].clientX-tx; tx=null; if(Math.abs(dx)>40){stopAuto();go(dx<0?1:-1);} });
+// тема
+const root=document.documentElement;
+function themeLbl(){const dark=root.dataset.theme? root.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; $('theme').textContent=dark?'светлая тема':'тёмная тема';}
+$('theme').onclick=()=>{const dark=root.dataset.theme? root.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; root.dataset.theme=dark?'light':'dark'; themeLbl();};
+themeLbl();
+recompute(false); cur=3; render();
+})();
+</script>
+
+</body></html>
