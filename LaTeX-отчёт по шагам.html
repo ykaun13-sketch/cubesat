@@ -1,0 +1,285 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>LaTeX-отчёт по шагам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: слева report.tex (тёмный редактор), справа лист PDF по ГОСТ; под ними карточка шага и пульт */
+:root{
+  --paper:#F3F4F1; --sheet:#FFFFFF; --ink:#14213D; --muted:#5A6577; --rule:#D9DCD4;
+  --code-bg:#17202E; --code-fg:#DCE3EE; --code-dim:#7D8AA0; --code-cmd:#8EC1FF; --code-com:#7FA37A; --code-new:#33405A;
+  --pdf:#FFFFFF; --pdf-ink:#111111; --hl:#E8A33D; --hl-soft:#FFF2D6; --err:#B8471F; --err-soft:#F8E4DA; --ok:#2E7D4F; --link:#1F4FA0;
+  --sans:"IBM Plex Sans","Segoe UI",Arial,sans-serif; --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+  --serif:"Tinos","Times New Roman",Times,serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0E1420; --sheet:#151D2C; --ink:#E6EBF3; --muted:#9AA6B8; --rule:#2A3446;
+  --code-bg:#0A0F18; --code-new:#26324A; --hl-soft:#3A2E14; --err:#F08A5D; --err-soft:#3A2419; --ok:#5FC08A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0E1420; --sheet:#151D2C; --ink:#E6EBF3; --muted:#9AA6B8; --rule:#2A3446;
+  --code-bg:#0A0F18; --code-new:#26324A; --hl-soft:#3A2E14; --err:#F08A5D; --err-soft:#3A2419; --ok:#5FC08A; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 0}
+.wrap{max-width:1360px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 24px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--err)}
+h1{font-size:clamp(24px,3.4vw,36px);font-weight:600;line-height:1.1;margin:4px 0 0;text-wrap:balance}
+.sub{color:var(--muted);margin:6px 0 0;max-width:72ch}
+.ghost{font:inherit;font-size:13px;border:1px solid var(--rule);background:var(--sheet);color:var(--muted);border-radius:999px;padding:6px 12px;cursor:pointer}
+.parts{display:flex;flex-wrap:wrap;gap:6px}
+.parts button{font:inherit;font-size:13px;border:1px solid var(--rule);background:var(--sheet);color:var(--muted);border-radius:6px;padding:5px 10px;cursor:pointer}
+.parts button[aria-current="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.duo{grid-template-columns:1fr}}
+.pane{border-radius:10px;overflow:hidden;display:flex;flex-direction:column;min-width:0;border:1px solid var(--rule)}
+.pane .bar{font-family:var(--mono);font-size:12px;padding:8px 12px;display:flex;justify-content:space-between;gap:8px}
+.code .bar{background:#0E1520;color:var(--code-dim)}
+.code pre{margin:0;background:var(--code-bg);color:var(--code-fg);font-family:var(--mono);font-size:13.5px;line-height:1.6;padding:10px 0;height:440px;overflow:auto}
+.code .ln{display:block;padding:0 14px 0 0;white-space:pre}
+.code .ln i{display:inline-block;width:38px;text-align:right;padding-right:12px;color:#4B5871;font-style:normal;user-select:none}
+.code .ln.new{background:var(--code-new);box-shadow:inset 3px 0 0 var(--hl)}
+.code .ln.bad{background:#4A2418;box-shadow:inset 3px 0 0 #F08A5D}
+.code .c{color:var(--code-cmd)} .code .k{color:var(--code-com)} .code .b{color:#E7C07B}
+.pdf .bar{background:#E4E6E1;color:#4A5160}
+.pdfscroll{background:#C9CCC6;height:440px;overflow:auto;padding:14px}
+.page{background:var(--pdf);color:var(--pdf-ink);font-family:var(--serif);font-size:15px;line-height:1.5;max-width:560px;margin:0 auto;padding:36px 30px 36px 46px;min-height:100%;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.page p{margin:0;text-indent:1.25em;text-align:justify}
+.page .blk{border-radius:3px;transition:background .3s;padding:2px 0;margin:0 0 8px}
+.page .blk.new{background:#FFF2D6;outline:2px solid #E8A33D;outline-offset:3px}
+.page .blk.bad{background:#FBE6DC;outline:2px solid #C4532B;outline-offset:3px}
+.page h4{font-size:15px;font-weight:700;margin:4px 0 6px;text-indent:1.25em}
+.page .toc-h,.page .center{text-align:center;font-weight:700;text-indent:0}
+.page .toc div{display:flex;gap:6px;text-indent:0}
+.page .toc div span:nth-child(2){flex:1;border-bottom:1px dotted #777;transform:translateY(-5px)}
+.page .eq{display:flex;align-items:center;justify-content:center;position:relative;padding:4px 40px;text-indent:0}
+.page .eq .no{position:absolute;right:0}
+.page .where{display:grid;grid-template-columns:auto auto 1fr;gap:0 6px;text-indent:0}
+.page .cap{text-align:center;text-indent:0}
+.page .tcap{text-align:left;text-indent:0}
+.page table{border-collapse:collapse;margin:0 auto;font-size:14px}
+.page td,.page th{border:1px solid #111;padding:2px 10px;font-weight:400}
+.page .num td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.page ol{margin:0;padding-left:2.6em;list-style:none;counter-reset:a}
+.page ol>li{counter-increment:a;position:relative}
+.page ol>li::before{content:counter(a) ")";position:absolute;left:-1.6em}
+.page ol ol{counter-reset:b}
+.page ol ol>li{counter-increment:b}
+.page ol ol>li::before{content:attr(data-m)}
+.page .lst{font-family:var(--mono);font-size:11.5px;border:1px solid #999;padding:6px 8px;white-space:pre;overflow-x:auto;text-indent:0;line-height:1.35}
+.page .ref{color:#111} .page .qq{color:#B22}
+.page math{font-size:1.05em}
+.page .fig{display:flex;justify-content:center}
+.page .fig svg{width:88%;height:auto;border:1px solid #ddd}
+.page .newpage{border-top:2px dashed #bbb;margin:14px -30px 10px -46px;font-family:var(--sans);font-size:11px;color:#888;text-align:center}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:8px 28px}
+@media (max-width:900px){.card{grid-template-columns:1fr}}
+.card .head{grid-column:1/-1}
+.stepno{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.card h2{font-size:21px;font-weight:600;margin:2px 0 0;line-height:1.25;text-wrap:balance}
+.card h3{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:6px 0 4px;font-weight:600}
+.card p{margin:0 0 6px}
+.card code{font-family:var(--mono);font-size:.9em;background:var(--paper);padding:1px 5px;border-radius:4px}
+.errbox{background:var(--err-soft);border-left:4px solid var(--err);border-radius:8px;padding:10px 12px}
+.errbox h3{color:var(--err);margin-top:0}
+.errbtn{font:inherit;font-size:14px;font-weight:600;margin-top:6px;border:1px solid var(--err);color:var(--err);background:transparent;border-radius:8px;padding:6px 12px;cursor:pointer;min-height:40px}
+.errbtn[aria-pressed="true"]{background:var(--err);color:var(--sheet)}
+.pult{position:sticky;bottom:0;z-index:5;background:var(--paper);padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px solid var(--rule)}
+.pult button{font:inherit;font-weight:600;min-height:44px;min-width:44px;padding:8px 14px;border-radius:8px;border:1px solid var(--rule);background:var(--sheet);color:var(--ink);cursor:pointer}
+.pult button.primary{background:var(--ink);color:var(--paper);border-color:var(--ink);min-width:140px}
+.pult button:disabled{opacity:.4;cursor:default}
+.pult .prog{flex:1;min-width:160px;display:flex;flex-direction:column;gap:4px}
+.pult .barx{height:6px;background:var(--rule);border-radius:3px;overflow:hidden}
+.pult .barx i{display:block;height:100%;background:var(--hl);width:0;transition:width .2s}
+.pult .lbl{font-family:var(--mono);font-size:12px;color:var(--muted)}
+@media (max-width:600px){.pult .prog{flex-basis:100%;order:-1}.pult button.primary{flex:1}.code pre,.pdfscroll{height:340px}}
+button:focus-visible{outline:3px solid var(--hl);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.pult .barx i,.page .blk{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">XeLaTeX · ГОСТ 7.32 · шаблон gostlab</div>
+      <h1>LaTeX-отчёт по шагам</h1>
+      <p class="sub">Каждое нажатие «Шаг» добавляет в report.tex одну конструкцию. Слева — что вы пишете, справа — что получится в PDF, внизу — зачем это и где обычно ошибаются. На шагах с оранжевым блоком можно включить ошибку и увидеть, как она портит PDF.</p>
+    </div>
+    <button class="ghost" id="theme" type="button">тёмная тема</button>
+  </header>
+  <nav class="parts" id="parts" aria-label="Части"></nav>
+  <div class="duo">
+    <div class="pane code"><div class="bar"><span>report.tex</span><span id="lnInfo"></span></div><pre id="code" aria-label="Код report.tex"></pre></div>
+    <div class="pane pdf"><div class="bar"><span>report.pdf · XeLaTeX</span><span>фрагмент</span></div><div class="pdfscroll" id="pdfs"><div class="page" id="page"></div></div></div>
+  </div>
+  <section class="card" id="card" aria-live="polite"></section>
+  <div class="pult">
+    <button id="bFirst" type="button" aria-label="В начало">⏮</button>
+    <button id="bPrev" type="button" aria-label="Шаг назад">◀</button>
+    <button id="bNext" type="button" class="primary">Шаг ▶</button>
+    <button id="bLast" type="button" aria-label="Весь отчёт">⏭</button>
+    <div class="prog"><div class="barx"><i id="barI"></i></div><div class="lbl" id="lbl"></div></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const R=String.raw;
+const mi=s=>`<math>${s}</math>`;
+/* ---------- шаги ---------- */
+const FIG=`<svg viewBox="0 0 300 110" role="img" aria-label="Сетка характеристик"><rect width="300" height="110" fill="#fff"/><line x1="10" y1="100" x2="295" y2="100" stroke="#999" stroke-dasharray="4 3"/>${[0,1,2,3,4].map(i=>`<line x1="20" y1="55" x2="${45+i*28}" y2="100" stroke="#2F6DB5"/>`).join('')}${[0,1,2,3].map(i=>`<line x1="${45+i*28}" y1="100" x2="${150+i*35}" y2="${40-i*6}" stroke="#B8471F"/>`).join('')}<polyline points="20,55 150,40 185,34 220,28 255,22 290,22" fill="none" stroke="#111" stroke-width="2"/></svg>`;
+const S=[
+{p:'Подготовка',t:'Каркас документа',
+ tex:[R`\documentclass{article}`,R`\usepackage{gostlab}   % всё оформление по ГОСТ`,R`\begin{document}`,'',R`\end{document}`],at:'end',
+ html:'<p class="center" style="color:#888;font-family:var(--sans);font-size:12px">пустой лист: в документе пока нет текста</p>',
+ what:R`Всё, что до <code>\begin{document}</code>, — преамбула: подключение шаблона и настроек. Текст отчёта пишется между <code>\begin{document}</code> и <code>\end{document}</code>.`,
+ why:R`Шрифт, поля, размер 14 pt, интервал 1,5 и отступ 1,25 см задаёт <code>gostlab.sty</code> — в тексте их не трогаем. В шаблоне преамбула уже готова; здесь показана упрощённо.`,
+ err:{msg:R`Компилятор pdfLaTeX вместо XeLaTeX: лог «Fatal … fontspec», PDF не собирается. Overleaf: Menu → Compiler → XeLaTeX.`,html:'<p class="center qq" style="font-family:var(--mono);font-size:12px">! Fatal fontspec error: "cannot-use-pdftex"<br>PDF не создан</p>'}},
+{p:'Структура',t:'Содержание',ins:[R`\tableofcontents`],
+ html:'TOC',
+ what:R`Команда <code>\tableofcontents</code> собирает содержание из всех <code>\section</code> документа.`,
+ why:R`LaTeX собирает PDF в два прохода: в первый запоминает заголовки и номера в файл .aux, во второй подставляет. Если содержание пустое или вместо номера «??» — соберите ещё раз (Overleaf обычно делает это сам).`},
+{p:'Структура',t:'Раздел с меткой',ins:['',R`\section{Постановка задачи}\label{sec:task}`],sec:'1 Постановка задачи',
+ html:'<h4>1 Постановка задачи</h4>',
+ what:R`<code>\section{…}</code> создаёт нумерованный раздел и строку в содержании. Метка <code>\label{sec:task}</code> — сразу после него, чтобы потом ссылаться «в разделе~\ref{sec:task}».`,
+ why:R`Номер раздела не пишем руками: добавите раздел выше — нумерация и содержание обновятся сами. Содержание выше уже показывает новый раздел.`},
+{p:'Структура',t:'Абзац: тире, диапазон, неразрывный пробел',ins:[R`Метод характеристик~--- основа расчёта сверхзвуковых`,R`сопел. Диапазон чисел Маха 2--3, погрешность 0,27\%.`,R`Подробнее см.~рис.~1.`],
+ html:'<p>Метод характеристик — основа расчёта сверхзвуковых сопел. Диапазон чисел Маха 2–3, погрешность 0,27%. Подробнее см. рис. 1.</p>',
+ what:R`<code>~---</code> — длинное тире с неразрывным пробелом перед ним; <code>--</code> — короткое тире для диапазона; <code>\%</code> — знак процента; <code>~</code> не даёт «рис.» и «1» разойтись по строкам.`,
+ why:R`Один Enter — не абзац: строки склеиваются. Новый абзац — пустая строка. Пробелы и одиночные переносы LaTeX не различает.`,
+ err:{line:1,tex:R`сопел. Диапазон чисел Маха 2--3, погрешность 0,27%.`,msg:R`<code>%</code> без обратной черты начинает комментарий: всё до конца строки пропадает из PDF.`,html:'<p>Метод характеристик — основа расчёта сверхзвуковых сопел. Диапазон чисел Маха 2–3, погрешность 0,27Подробнее см. рис. 1.</p>'}},
+{p:'Структура',t:'Нумерованный список по ГОСТ',ins:['',R`Задачи работы:`,R`\begin{enumerate}`,R`  \item рассчитать контур сопла;`,R`  \item проверить сходимость`,R`  \begin{enumerate}`,R`    \item по длине сопла;`,R`    \item по выходной высоте.`,R`  \end{enumerate}`,R`\end{enumerate}`],
+ html:'<p>Задачи работы:</p><ol><li>рассчитать контур сопла;</li><li>проверить сходимость<ol><li data-m="а)">по длине сопла;</li><li data-m="б)">по выходной высоте.</li></ol></li></ol>',
+ what:R`<code>enumerate</code> — нумерованный список, <code>itemize</code> — маркированный (тире). Шаблон сам делает нумерацию «1)» и «а)», как требует ГОСТ.`,
+ why:R`Пункты — со строчной буквы, в конце «;», в последнем — «.». Больше двух уровней вложенности не используйте. Каждое открытое окружение нужно закрыть.`,
+ err:{line:9,tex:R`% \end{enumerate}  ← забыли закрыть`,msg:R`Окружение не закрыто: лог «\begin{enumerate} ended by \end{document}», PDF не обновится.`,html:'<p class="qq" style="font-family:var(--mono);font-size:12px">! LaTeX Error: \\begin{enumerate} on input line … ended by \\end{document}.</p>'}},
+{p:'Формулы',t:'Формула в строке',ins:['',R`Для числа Маха $M_a = 2{,}4$ и показателя адиабаты`,R`$\gamma = 1{,}4$ шаг по углу равен $10^{-3}$~рад.`],
+ html:`<p>Для числа Маха ${mi('<msub><mi>M</mi><mi>a</mi></msub><mo>=</mo><mn>2,4</mn>')} и показателя адиабаты ${mi('<mi>γ</mi><mo>=</mo><mn>1,4</mn>')} шаг по углу равен ${mi('<msup><mn>10</mn><mrow><mo>−</mo><mn>3</mn></mrow></msup>')} рад.</p>`,
+ what:R`Формула в строке — между <code>$ … $</code>. Индекс <code>_</code>, степень <code>^</code>; если в индексе больше одного символа — фигурные скобки: <code>10^{-3}</code>.`,
+ why:R`Десятичная запятая в формуле — <code>2{,}4</code>: иначе LaTeX поставит после запятой пробел, как в перечислении. Буквы-обозначения в тексте тоже пишем через <code>$…$</code>, чтобы они были курсивом.`,
+ err:{line:2,tex:R`$\gamma = 1,4$ шаг по углу равен $10^-3$~рад.`,msg:R`Без скобок <code>10^-3</code> даст «10⁻3», а <code>1,4</code> без <code>{,}</code> — «1, 4» с пробелом.`,html:`<p>Для числа Маха ${mi('<msub><mi>M</mi><mi>a</mi></msub><mo>=</mo><mn>2,4</mn>')} и показателя адиабаты ${mi('<mi>γ</mi><mo>=</mo><mn>1</mn><mo separator="true">,</mo><mspace width="0.3em"/><mn>4</mn>')} шаг по углу равен ${mi('<msup><mn>10</mn><mo>−</mo></msup><mn>3</mn>')} рад.</p>`}},
+{p:'Формулы',t:'Нумерованная формула и «где»',ins:['',R`Наклон характеристик:`,R`\begin{equation}\label{eq:char}`,R`  \left(\frac{dy}{dx}\right)_{C^\mp}`,R`  = \operatorname{tg}(\theta \mp \mu),`,R`\end{equation}`,R`\begin{where}`,R`  $\theta$ & угол вектора скорости, рад; \\`,R`  $\mu$ & угол Маха.`,R`\end{where}`],
+ html:`<p>Наклон характеристик:</p><div class="eq">${mi('<msub><mrow><mo>(</mo><mfrac><mrow><mi>d</mi><mi>y</mi></mrow><mrow><mi>d</mi><mi>x</mi></mrow></mfrac><mo>)</mo></mrow><msup><mi>C</mi><mo>∓</mo></msup></msub><mo>=</mo><mi mathvariant="normal">tg</mi><mo>(</mo><mi>θ</mi><mo>∓</mo><mi>μ</mi><mo>)</mo><mo>,</mo>')}<span class="no">(1)</span></div><div class="where"><span>где</span><span>${mi('<mi>θ</mi>')}</span><span>— угол вектора скорости, рад;</span><span></span><span>${mi('<mi>μ</mi>')}</span><span>— угол Маха.</span></div>`,
+ what:R`<code>equation</code> — формула отдельной строкой с номером справа. <code>\label{eq:char}</code> ставит метку, по которой потом сошлёмся. Окружение <code>where</code> из шаблона печатает пояснение «где …».`,
+ why:R`Перед формулой — текст, который её вводит; знак препинания — внутри формулы. В «где» символы — в том порядке, в каком они в формуле; строки разделяются <code>\\</code>, кроме последней. <code>\left( … \right)</code> подгоняют скобки под высоту дроби.`},
+{p:'Формулы',t:'Ссылка на формулу',ins:['',R`По формуле~\eqref{eq:char} строятся отрезки обеих характеристик.`],
+ html:'<p>По формуле (1) строятся отрезки обеих характеристик.</p>',
+ what:R`<code>\eqref{eq:char}</code> подставляет номер формулы в скобках. Номер руками не пишем.`,
+ why:R`Добавите формулу выше — все ссылки перенумеруются сами. <code>~</code> перед ссылкой не даёт номеру оказаться одному в начале строки.`,
+ err:{line:1,tex:R`По формуле~\eqref{eq:Char} строятся отрезки обеих характеристик.`,msg:R`Опечатка в метке (регистр важен: <code>eq:Char</code> ≠ <code>eq:char</code>) — вместо номера «??». То же бывает, если документ собран только один раз.`,html:'<p>По формуле <b>(??)</b> строятся отрезки обеих характеристик.</p>'}},
+{p:'Формулы',t:'Несколько строк: align',ins:['',R`\begin{align}`,R`  \theta &= \frac{K^- + K^+}{2}, \label{eq:th}\\`,R`  \nu    &= \frac{K^- - K^+}{2}. \label{eq:nu}`,R`\end{align}`],
+ html:`<div class="eq">${mi('<mi>θ</mi><mo>=</mo><mfrac><mrow><msup><mi>K</mi><mo>−</mo></msup><mo>+</mo><msup><mi>K</mi><mo>+</mo></msup></mrow><mn>2</mn></mfrac><mo>,</mo>')}<span class="no">(2)</span></div><div class="eq">${mi('<mi>ν</mi><mo>=</mo><mfrac><mrow><msup><mi>K</mi><mo>−</mo></msup><mo>−</mo><msup><mi>K</mi><mo>+</mo></msup></mrow><mn>2</mn></mfrac><mo>.</mo>')}<span class="no">(3)</span></div>`,
+ what:R`<code>align</code> — несколько связанных формул, выровненных по знаку «=». <code>&</code> — точка выравнивания, <code>\\</code> — новая строка. Каждая строка получает свой номер.`,
+ why:R`Связанные формулы не пишут двумя <code>equation</code> подряд: <code>align</code> аккуратнее. Убрать номер у одной строки — <code>\notag</code>, у всей группы — <code>align*</code>.`},
+{p:'Формулы',t:'Русские обозначения функций',ins:['',R`\begin{equation}`,R`  \mu = \arcsin\frac{1}{M}, \quad`,R`  \operatorname{tg}\theta_{w,\max} = 0{,}332.`,R`\end{equation}`],
+ html:`<div class="eq">${mi('<mi>μ</mi><mo>=</mo><mi mathvariant="normal">arcsin</mi><mfrac><mn>1</mn><mi>M</mi></mfrac><mo>,</mo><mspace width="1em"/><mi mathvariant="normal">tg</mi><msub><mi>θ</mi><mrow><mi>w</mi><mo>,</mo><mi mathvariant="normal">max</mi></mrow></msub><mo>=</mo><mn>0,332</mn><mo>.</mo>')}<span class="no">(4)</span></div>`,
+ what:R`По-русски тангенс — tg, арктангенс — arctg: <code>\operatorname{tg}</code>, <code>\operatorname{arctg}</code>. Синус, логарифм — готовыми командами <code>\sin</code>, <code>\ln</code>.`,
+ why:R`Переменные — курсивом (это делает <code>$…$</code>), названия функций и слова-индексы — прямым. Индекс-слово по-русски — <code>y_\text{вх}</code>.`,
+ err:{line:3,tex:R`  tan\theta_{w,max} = 0{,}332.`,msg:R`<code>tan</code> без обратной черты набирается курсивом как произведение t·a·n, и по-русски нужно tg; <code>max</code> без <code>\max</code> — тоже курсивом.`,html:`<div class="eq">${mi('<mi>μ</mi><mo>=</mo><mi mathvariant="normal">arcsin</mi><mfrac><mn>1</mn><mi>M</mi></mfrac><mo>,</mo><mspace width="1em"/><mi>t</mi><mi>a</mi><mi>n</mi><msub><mi>θ</mi><mrow><mi>w</mi><mo>,</mo><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mo>=</mo><mn>0,332</mn><mo>.</mo>')}<span class="no">(4)</span></div>`}},
+{p:'Рисунки',t:'Рисунок: окружение figure',ins:['',R`Сетка характеристик показана на рисунке~\ref{fig:grid}.`,R`\begin{figure}[H]`,R`  \centering`,R`  \includegraphics[width=\textwidth]{grid.png}`,R`  \caption{Сетка характеристик}`,R`  \label{fig:grid}`,R`\end{figure}`],
+ html:`<p>Сетка характеристик показана на рисунке 1.</p><div class="fig">${FIG}</div><p class="cap">Рисунок 1 — Сетка характеристик</p>`,
+ what:R`<code>[H]</code> — ставить рисунок ровно здесь; <code>\includegraphics</code> берёт файл из папки figures/; <code>\caption</code> печатает «Рисунок 1 — …» без точки в конце; <code>\label</code> — строго после <code>\caption</code>.`,
+ why:R`По ГОСТ сначала ссылка в тексте, потом сам рисунок. График сохраняйте из MATLAB командой <code>print(gcf,'figures/grid','-dpng','-r300')</code> шириной 16 см, а не скриншотом окна.`,
+ err:{line:5,drop:6,tex:R`  \label{fig:grid}\caption{Сетка характеристик}`,msg:R`Метка до <code>\caption</code> ссылается не на рисунок, а на текущий раздел: в тексте окажется «рисунке 1» с номером раздела вместо номера рисунка, а при другом порядке — «??».`,html:`<p>Сетка характеристик показана на рисунке <b>1</b> <span style="font-family:var(--sans);font-size:11px;color:#B22">← номер раздела, а не рисунка</span>.</p><div class="fig">${FIG}</div><p class="cap">Рисунок 1 — Сетка характеристик</p>`}},
+{p:'Таблицы',t:'Таблица: tabular',ins:['',R`\begin{table}[H]`,R`  \caption{Исходные данные}\label{tab:in}`,R`  \centering`,R`  \begin{tabular}{|l|c|c|}`,R`    \hline`,R`    Параметр & Обозн. & Знач. \\ \hline`,R`    Число Маха & $M_a$ & 2,4 \\ \hline`,R`    Показатель & $\gamma$ & 1,4 \\ \hline`,R`  \end{tabular}`,R`\end{table}`],
+ html:`<p class="tcap">Таблица 1 — Исходные данные</p><table><tr><td>Параметр</td><td>Обозн.</td><td>Знач.</td></tr><tr><td>Число Маха</td><td style="text-align:center">${mi('<msub><mi>M</mi><mi>a</mi></msub>')}</td><td style="text-align:center">2,4</td></tr><tr><td>Показатель</td><td style="text-align:center">${mi('<mi>γ</mi>')}</td><td style="text-align:center">1,4</td></tr></table>`,
+ what:R`<code>{|l|c|c|}</code> — три столбца: l слева, c по центру, r справа; <code>|</code> — вертикальная линия. <code>&</code> — следующая ячейка, <code>\\</code> — конец строки, <code>\hline</code> — горизонтальная линия.`,
+ why:R`Подпись таблицы по ГОСТ — над ней и слева: «Таблица 1 — …». Её ставит <code>\caption</code>, если он стоит перед <code>tabular</code>. Число <code>&</code> в строке = число столбцов − 1.`,
+ err:{line:7,tex:R`    Число Маха & $M_a$ & 2,4 & \\ \hline`,msg:R`Лишний <code>&</code>: в строке больше ячеек, чем столбцов. Лог: «Extra alignment tab has been changed to \cr».`,html:'<p class="qq" style="font-family:var(--mono);font-size:12px">! Extra alignment tab has been changed to \\cr.</p>'}},
+{p:'Таблицы',t:'Числа по запятой: siunitx',ins:['',R`\begin{table}[H]`,R`  \caption{Сходимость}\label{tab:conv}`,R`  \centering`,R`  \begin{tabular}{|c|S[table-format=1.3]|S[table-format=1.2]|}`,R`    \hline`,R`    $n$ & {$L/y_*$} & {$\delta$, \%} \\ \hline`,R`    10 & 8.025 & 1.07 \\ \hline`,R`    30 & 8.072 & 0.27 \\ \hline`,R`  \end{tabular}`,R`\end{table}`,R`Длина сопла $L = \qty{161.4}{мм}$, угол \qty{18.37}{\degree}.`],
+ html:`<p class="tcap">Таблица 2 — Сходимость</p><table class="num"><tr><td style="text-align:center">${mi('<mi>n</mi>')}</td><td style="text-align:center">${mi('<mi>L</mi><mo>/</mo><msub><mi>y</mi><mo>*</mo></msub>')}</td><td style="text-align:center">${mi('<mi>δ</mi>')}, %</td></tr><tr><td style="text-align:center">10</td><td>8,025</td><td>1,07</td></tr><tr><td style="text-align:center">30</td><td>8,072</td><td>0,27</td></tr></table><p style="margin-top:8px">Длина сопла ${mi('<mi>L</mi><mo>=</mo><mn>161,4</mn><mspace width="0.2em"/><mi mathvariant="normal">мм</mi>')}, угол 18,37°.</p>`,
+ what:R`Столбец <code>S[table-format=1.3]</code> выравнивает числа по запятой: одна цифра до запятой, три после. Числа вводите с точкой, как из MATLAB, — в PDF будет запятая. <code>\qty{число}{единица}</code> — число с единицей.`,
+ why:R`Заголовок S-столбца — в фигурных скобках, иначе siunitx примет его за число. <code>\qty</code> не даёт числу и единице разойтись по строкам; единицы пишите по-русски: <code>\qty{20}{мм}</code>.`},
+{p:'Ссылки',t:'Источники и ссылки на них',ins:['',R`Метод изложен в~\cite{Abr}.`,'',R`\begin{thebibliography}{9}`,R`\bibitem{Abr} Абрамович, Г.\,Н. Прикладная газовая`,R`  динамика~/ Г.\,Н.~Абрамович.~--- М.\,: Наука, 1991.~---`,R`  600~с.~--- Текст : непосредственный.`,R`\end{thebibliography}`],
+ html:'<p>Метод изложен в [1].</p><div class="newpage">новая страница</div><p class="center">СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ</p><p style="text-indent:0">1. Абрамович, Г. Н. Прикладная газовая динамика / Г. Н. Абрамович. — М. : Наука, 1991. — 600 с. — Текст : непосредственный.</p>',
+ sec:'Список использованных источников',
+ what:R`<code>\cite{Abr}</code> ставит номер источника в квадратных скобках; список — окружение <code>thebibliography</code>, каждый источник — <code>\bibitem{метка}</code>.`,
+ why:R`Источники нумеруются в порядке, в каком записаны в списке, поэтому расставьте <code>\bibitem</code> по первому упоминанию в тексте. Оформление по ГОСТ 7.0.100-2018: тире — <code>~---</code>, инициалы — <code>Г.\,Н.</code>, сайт — <code>\url{…}</code>.`},
+{p:'Ссылки',t:'Приложение с листингом',ins:['',R`\appendixsection{обязательное}{Листинг программы}`,R`\codelisting{code/laval_moc.m}{Основной скрипт laval\_moc.m}`],
+ html:'<div class="newpage">новая страница</div><p class="center">ПРИЛОЖЕНИЕ А<br>(обязательное)<br>Листинг программы</p><p class="tcap">Листинг А.1 — Основной скрипт laval_moc.m</p><div class="lst">% Профилирование сопла методом характеристик\nMa = 2.4; gam = 1.4; n = 30;\nnuA = prandtl_meyer(Ma, gam);\nthMax = nuA/2;</div>',
+ sec:'Приложение А Листинг программы',
+ what:R`<code>\appendixsection{статус}{заголовок}</code> начинает приложение с новой страницы; буквы А, Б, В шаблон ставит сам. <code>\codelisting{путь}{подпись}</code> вставляет код из файла папки code/.`,
+ why:R`Файлы из MATLAB 2015a сохранены в Windows-1251 — для них <code>\codelisting[cp1251]{…}{…}</code>. В пути подчёркивание пишется как есть, в подписи — <code>\_</code>, потому что подпись — обычный текст.`,
+ err:{line:2,tex:R`\codelisting{code/laval_moc.m}{Основной скрипт laval\_moc.m}  % файл в cp1251`,msg:R`Файл сохранён в Windows-1251, а кодировка не указана: русские комментарии превращаются в «кракозябры». Добавьте <code>[cp1251]</code>.`,html:'<div class="newpage">новая страница</div><p class="center">ПРИЛОЖЕНИЕ А<br>(обязательное)<br>Листинг программы</p><p class="tcap">Листинг А.1 — Основной скрипт laval_moc.m</p><div class="lst">% Ïðîôèëèðîâàíèå ñîïëà ìåòîäîì õàðàêòåðèñòèê\nMa = 2.4; gam = 1.4; n = 30;\nnuA = prandtl_meyer(Ma, gam);\nthMax = nuA/2;</div>'}},
+{p:'Сдача',t:'Перед печатью',ins:[],final:true,
+ html:'',
+ what:R`Отчёт собран. Перед сдачей пройдите чек-лист: титул заполнен; <code>\hintsoff</code> включён и синих подсказок нет; содержание полное; все формулы пронумерованы и с «где»; на каждый рисунок, таблицу и источник есть ссылка; нет «??» и «кракозябр»; в заключении — числа.`,
+ why:R`Печатайте PDF в масштабе «Фактический размер»: «Подогнать по размеру страницы» сжимает документ и поля перестают соответствовать ГОСТ. Оформление — 20 баллов из 100, и проверяют его по этому списку.`}
+];
+/* ---------- сборка состояния до шага k ---------- */
+const $=id=>document.getElementById(id);
+let cur=0, showErr=false;
+const parts=[...new Set(S.map(s=>s.p))];
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function hlTex(s){
+  let e=esc(s); const ci=e.indexOf('%'); let com='';
+  // комментарий: % не после обратной черты
+  const m=e.match(/(^|[^\\])%/); if(m){const i=m.index+m[1].length; com=e.slice(i); e=e.slice(0,i);}
+  e=e.replace(/\\[A-Za-z]+\*?/g,x=>`<span class="c">${x}</span>`).replace(/[{}]/g,x=>`<span class="b">${x}</span>`);
+  return e+(com?`<span class="k">${com}</span>`:'');
+}
+function build(k){
+  const lines=[]; // {t,step,bad}
+  const blocks=[]; const secs=[];
+  for(let i=0;i<=k;i++){
+    const s=S[i]; const bad=(i===k&&showErr&&s.err);
+    if(i===0){ s.tex.forEach(t=>lines.push({t,step:0})); continue; }
+    let L=s.ins.slice();
+    if(bad && s.err.tex!=null){ L[s.err.line]=s.err.tex; if(s.err.drop!=null) L.splice(s.err.drop,1); }
+    const endIdx=lines.length-1; // \end{document}
+    L.forEach((t,j)=>lines.splice(endIdx+j,0,{t,step:i,bad:bad&&s.err.tex!=null&&t===s.err.tex}));
+    if(s.sec) secs.push(s.sec);
+    if(s.html) blocks.push({h: bad&&s.err.html? s.err.html : s.html, step:i, bad});
+  }
+  if(k===0 && showErr && S[0].err) blocks.length=0;
+  return {lines,blocks,secs};
+}
+function render(){
+  const k=cur, s=S[k]; const st=build(k);
+  // код
+  let firstNew=-1;
+  $('code').innerHTML=st.lines.map((l,i)=>{const isNew=l.step===k&&k>0||(k===0); if(isNew&&firstNew<0)firstNew=i;
+    return `<span class="ln${l.bad?' bad':(isNew?' new':'')}" data-i="${i}"><i>${i+1}</i>${hlTex(l.t)||' '}</span>`;}).join('');
+  $('lnInfo').textContent=`${st.lines.length} строк`;
+  const ln=$('code').querySelector(`[data-i="${Math.max(firstNew,0)}"]`); if(ln) $('code').scrollTop=ln.offsetTop-80;
+  // PDF
+  let html='';
+  if(k===0 && showErr) html=S[0].err.html;
+  for(const b of st.blocks){
+    let h=b.h;
+    if(h==='TOC'){ h='<div class="toc"><p class="toc-h">СОДЕРЖАНИЕ</p>'+(st.secs.length?st.secs.map(x=>`<div><span>${x}</span><span></span><span>…</span></div>`).join(''):'<p style="text-indent:0;color:#999;font-family:var(--sans);font-size:12px">пока пусто: разделов ещё нет</p>')+'</div>'; }
+    const cls=b.step===k?(b.bad?' bad':' new'):'';
+    if(b.step===0) continue;
+    html+=`<div class="blk${cls}" id="b${b.step}">${h}</div>`;
+  }
+  if(k===0 && !showErr) html=S[0].html;
+  if(s.final) html=html+'';
+  $('page').innerHTML=html;
+  const nb=$('page').querySelector('.blk.new,.blk.bad'); const sc=$('pdfs');
+  if(nb) sc.scrollTop=nb.offsetTop-sc.offsetTop-40; else if(s.final) sc.scrollTop=0;
+  // карточка
+  const e=s.err;
+  $('card').innerHTML=`<div class="head"><div class="stepno">Шаг ${k+1} из ${S.length} · ${s.p}</div><h2>${s.t}</h2></div>
+    <div><h3>Что написали</h3><p>${s.what}</p><h3>Почему так</h3><p>${s.why}</p></div>
+    <div>${e?`<div class="errbox"><h3>Типичная ошибка</h3><p>${e.msg}</p><button class="errbtn" id="errBtn" type="button" aria-pressed="${showErr}">${showErr?'Вернуть правильный вариант':'Показать ошибку в коде и PDF'}</button></div>`:''}</div>`;
+  if(e) $('errBtn').onclick=()=>{showErr=!showErr;render();};
+  // пульт и части
+  $('bPrev').disabled=$('bFirst').disabled=k===0; $('bNext').disabled=$('bLast').disabled=k===S.length-1;
+  $('barI').style.width=(k/(S.length-1)*100)+'%'; $('lbl').textContent=`шаг ${k+1} из ${S.length}`;
+  $('parts').innerHTML=parts.map(p=>`<button type="button" data-p="${p}" aria-current="${p===s.p}">${p}</button>`).join('');
+  $('parts').querySelectorAll('button').forEach(b=>b.onclick=()=>{cur=S.findIndex(x=>x.p===b.dataset.p);showErr=false;render();});
+}
+const go=d=>{cur=Math.max(0,Math.min(S.length-1,cur+d));showErr=false;render();};
+$('bNext').onclick=()=>go(1); $('bPrev').onclick=()=>go(-1);
+$('bFirst').onclick=()=>{cur=0;showErr=false;render()}; $('bLast').onclick=()=>{cur=S.length-1;showErr=false;render()};
+document.addEventListener('keydown',ev=>{ if(ev.key==='ArrowRight'||ev.key===' '){ev.preventDefault();go(1)} else if(ev.key==='ArrowLeft')go(-1); });
+let tx=null; document.querySelector('.duo').addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+document.querySelector('.duo').addEventListener('touchend',e=>{ if(tx==null)return; const dx=e.changedTouches[0].clientX-tx; tx=null; if(Math.abs(dx)>60)go(dx<0?1:-1); });
+const root=document.documentElement;
+const isDark=()=>root.dataset.theme? root.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+const tl=()=>{$('theme').textContent=isDark()?'светлая тема':'тёмная тема';};
+$('theme').onclick=()=>{root.dataset.theme=isDark()?'light':'dark';tl();}; tl();
+render();
+})();
+</script>
+
+</body></html>
